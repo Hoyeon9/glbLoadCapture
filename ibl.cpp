@@ -1,5 +1,10 @@
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+
 #include <iostream>
 #include <map>
+#include <experimental/filesystem>
+using namespace std;
+namespace fs = experimental::filesystem;
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -9,8 +14,11 @@
 #include <math.h>
 #include <stb_image.h>
 #include "model.h"
-
 #include "shader.h"
+
+#define GL_BGR_EXT 0x80E0
+#include <opencv2/opencv.hpp>
+using namespace cv;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -18,9 +26,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 GLuint loadTexture(char const* texPath);
 GLuint loadHDR(char const* texPath);
-void makeSphere(unsigned int& sphereVAO, unsigned int& indexCount);
+vector<string> LoadFileList(string root);
+void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName);
+void captureImage(string fileName);
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 1.0f, 1.5f);
+glm::vec3 objCtr = glm::vec3(0.0f, 0.2f, 0.0f);
+float capRad = 1.8;
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.5f, 1.5f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 float deltaTime = 0.0f;
@@ -33,12 +45,32 @@ float fov = 45.0f;
 int page = 0;
 int max_page = 8;
 
+string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
+string savePath = "C:\\Users\\gcoh0\\source\\repos\\LearnOpenGL\\testSave\\";
+
 int main() {
+	//Create repo
+	if (!fs::exists(savePath + "A")) {
+		for (int i = 48; i <= 57; i++) {
+			char buff[256];
+			sprintf(buff, "mkdir %s%c", savePath.c_str(), i);
+			system(buff);
+		}
+		for (int i = 65; i <= 90; i++) {
+			char buff[256];
+			sprintf(buff, "mkdir %s%c", savePath.c_str(), i);
+			system(buff);
+		}
+	}
+
+
+
 	//---Creating window(from initialize GLFW~~)---
 	glfwInit(); //initilalizes GLFW
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); //(possible options, valule of our options)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); //use major, minor both 3 version
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //core profile-not forward-compatible
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	GLFWwindow* window = glfwCreateWindow(800, 600, "IBL_test", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window\n";
@@ -81,8 +113,9 @@ int main() {
 	glUniform1i(glGetUniformLocation(renderProgram, ("prefilterMap")), 1);
 	glUniform1i(glGetUniformLocation(renderProgram, ("brdfLUT")), 2);
 
-	string modelPath = "models/0/B00XBC3BF0.glb";
-	Model loadedModel = Model(modelPath);
+	auto filePaths = LoadFileList(modelsPath);
+	//string modelPath = "models/0/B00XBC3BF0.glb";
+	Model loadedModel = Model(filePaths[0]);
 	max_page = loadedModel.getTextureNum();
 	cout << max_page << " max pages\n";
 
@@ -409,14 +442,12 @@ int main() {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//-----------------specular BRDF---------------
-
-	unsigned int sphereVAO, indexCount;
-	makeSphere(sphereVAO, indexCount);
 	
 	//glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_MULTISAMPLE);
 
 	//To original size
 	int scrWidth, scrHeight;
@@ -440,6 +471,17 @@ int main() {
 	std::cout << "Main Loop---------------------------------------\n";
 	int currentPage = 0;
 	while (!glfwWindowShouldClose(window)) {
+		string filePath = filePaths[0];
+		size_t found = filePath.find_last_of("/\\");
+		string fileName = filePath.substr(found - 1);
+		if (!fs::exists(savePath + fileName)) {
+			char buff[256];
+			sprintf(buff, "mkdir %s%s", savePath.c_str(), fileName.c_str());
+			system(buff);
+		}
+		
+
+
 		processInput(window);
 
 		//delta time
@@ -485,7 +527,7 @@ int main() {
 		
 		//light sources
 		glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
-		for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
+		/*for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lightPositions[i]);
 			model = glm::scale(model, glm::vec3(0.3f));
@@ -501,7 +543,7 @@ int main() {
 			glUniform3fv(glGetUniformLocation(renderProgram, ("lightPositions[" + to_string(i) + "]").c_str()), 1, glm::value_ptr(lightPositions[i]));;
 			glUniform3fv(glGetUniformLocation(renderProgram, ("lightColors[" + to_string(i) + "]").c_str()), 1, glm::value_ptr(lightColors[i]));
 
-		}
+		}*/
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
@@ -510,24 +552,36 @@ int main() {
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 		
-		if (page == 0)
-			loadedModel.Draw(renderProgram);
-		else {
-			glUseProgram(quadShader);
-			glUniform1i(glGetUniformLocation(quadShader, ("texture1")), 0);
-			glActiveTexture(GL_TEXTURE0);
-			Texture tempTexture = loadedModel.getTexture(page - 1);
-			glBindTexture(GL_TEXTURE_2D, tempTexture.id);
-			if (currentPage != page) {
-				currentPage = page;
-				cout << tempTexture.type << "\n";
+		/*for (float th = 0; th <= 180; th += 45) {
+			for (float pi = 0; pi <= 315; pi += 45) {
+				glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+				cameraPos = glm::vec3(capRad * cos(glm::radians(th-90)) * cos(glm::radians(pi)), capRad * sin(glm::radians(th-90)), capRad * cos(glm::radians(th-90)) * sin(glm::radians(pi))) + objCtr;
+				cameraFront = objCtr - cameraPos;
+				view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+				glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
+				glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+				glUniform3fv(glGetUniformLocation(renderProgram, "camPos"), 1, glm::value_ptr(cameraPos));
+				glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
+
+				loadedModel.Draw(renderProgram);
+				string fileName = "test_";
+				captureImage(fileName+to_string((int)th) + "_" + to_string((int)pi)+".png");
 			}
-			glBindVertexArray(quadVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
+		}*/
+		fileName = fileName + "\\test_";
+		rotateCapture(loadedModel, renderProgram, fileName);
+		
+
+		//---------------------------------------Capture-----------------------------------
+		//-------------Capture ends-----------------------------
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+		
+
+		break;
 	}
 	glDeleteProgram(equiProgram);
 	glDeleteBuffers(1, &cubeVAO);
@@ -594,6 +648,85 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	if (fov > 60.0f) fov = 60.0f;
 }
 
+vector<string> LoadFileList(string root) {
+	vector<string> res;
+	for (const auto& entry : fs::directory_iterator(root)) {
+		auto cur = entry.path().native();
+		string path(cur.begin(), cur.end());
+		if (is_directory(entry.path())) {
+			auto tmp = LoadFileList(path);
+			for (auto i : tmp)
+				res.push_back(i);
+		}
+		else
+			res.push_back(path);
+	}
+	return res;
+}
+void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName) {
+	for (float th = 0; th <= 180; th += 45) {
+		for (float pi = 0; pi <= 315; pi += 45) {
+			glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glm::mat4 model = glm::mat4(1.0f);
+			glm::mat4 view = glm::mat4(1.0f);
+			glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
+			cameraPos = glm::vec3(capRad * cos(glm::radians(th - 90)) * cos(glm::radians(pi)), capRad * sin(glm::radians(th - 90)), capRad * cos(glm::radians(th - 90)) * sin(glm::radians(pi))) + objCtr;
+			cameraFront = objCtr - cameraPos;
+			view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+			glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
+			glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+			glUniform3fv(glGetUniformLocation(renderProgram, "camPos"), 1, glm::value_ptr(cameraPos));
+			glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
+
+			loadedModel.Draw(renderProgram);
+			captureImage(fileName + to_string((int)th) + "_" + to_string((int)pi) + ".png");
+		}
+	}
+}
+void captureImage(string fileName) {
+	int bitsNum;
+	GLubyte* bits; //RGB bits
+	GLint captureImage[4]; //current viewport
+
+	//get current viewport
+	glGetIntegerv(GL_VIEWPORT, captureImage); // 이미지 크기 알아내기
+
+	int rows = captureImage[3];
+	int cols = captureImage[2];
+
+	bitsNum = 3 * cols * rows;
+	bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
+
+	//read pixel from frame buffer
+	//glFinish(); //finish all commands of OpenGL
+
+	glPixelStorei(GL_PACK_ALIGNMENT, 1); //or glPixelStorei(GL_PACK_ALIGNMENT,4);
+	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+	glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+	glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+	glReadPixels(0, 0, cols, rows, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
+
+	Mat outputImage(rows, cols, CV_8UC3);
+	int currentIdx;
+
+	for (int i = 0; i < outputImage.rows; i++)
+	{
+		for (int j = 0; j < outputImage.cols; j++)
+		{
+			// stores image from top to bottom, left to right
+			currentIdx = (rows - i - 1) * 3 * cols + j * 3; // +0
+
+			outputImage.at<Vec3b>(i, j)[0] = (uchar)(bits[currentIdx]);
+			outputImage.at<Vec3b>(i, j)[1] = (uchar)(bits[++currentIdx]); // +1
+			outputImage.at<Vec3b>(i, j)[2] = (uchar)(bits[++currentIdx]); // +2
+		}
+	}
+	string filePath = savePath + fileName;
+
+	imwrite(filePath, outputImage);
+	delete[] bits;
+}
 GLuint loadTexture(char const* texPath) {
 	unsigned int texture;
 	glGenTextures(1, &texture);
@@ -647,95 +780,4 @@ GLuint loadHDR(char const* texPath) {
 		return -1;
 	}
 	return hdrTexture;
-}
-
-void makeSphere(unsigned int &sphereVAO, unsigned int &indexCount)
-{
-	
-	{
-		glGenVertexArrays(1, &sphereVAO);
-
-		unsigned int vbo, ebo;
-		glGenBuffers(1, &vbo);
-		glGenBuffers(1, &ebo);
-
-		std::vector<glm::vec3> positions;
-		std::vector<glm::vec2> uv;
-		std::vector<glm::vec3> normals;
-		std::vector<unsigned int> indices;
-
-		const unsigned int X_SEGMENTS = 64;
-		const unsigned int Y_SEGMENTS = 64;
-		const float PI = 3.14159265359f;
-		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-		{
-			for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-			{
-				float xSegment = (float)x / (float)X_SEGMENTS;
-				float ySegment = (float)y / (float)Y_SEGMENTS;
-				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-				float yPos = std::cos(ySegment * PI);
-				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-
-				positions.push_back(glm::vec3(xPos, yPos, zPos));
-				uv.push_back(glm::vec2(xSegment, ySegment));
-				normals.push_back(glm::vec3(xPos, yPos, zPos));
-			}
-		}
-
-		bool oddRow = false;
-		for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-		{
-			if (!oddRow) // even rows: y == 0, y == 2; and so on
-			{
-				for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-				{
-					indices.push_back(y * (X_SEGMENTS + 1) + x);
-					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-				}
-			}
-			else
-			{
-				for (int x = X_SEGMENTS; x >= 0; --x)
-				{
-					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-					indices.push_back(y * (X_SEGMENTS + 1) + x);
-				}
-			}
-			oddRow = !oddRow;
-		}
-		indexCount = static_cast<unsigned int>(indices.size());
-
-		std::vector<float> data;
-		for (unsigned int i = 0; i < positions.size(); ++i)
-		{
-			data.push_back(positions[i].x);
-			data.push_back(positions[i].y);
-			data.push_back(positions[i].z);
-			if (uv.size() > 0)
-			{
-				data.push_back(uv[i].x);
-				data.push_back(uv[i].y);
-			}
-			if (normals.size() > 0)
-			{
-				data.push_back(normals[i].x);
-				data.push_back(normals[i].y);
-				data.push_back(normals[i].z);
-			}
-			
-		}
-		glBindVertexArray(sphereVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
-	}
 }
