@@ -13,25 +13,16 @@ struct Material{
 	sampler2D texture_roughness1;
 	sampler2D texture_emissive1;
 };
-//uniform sampler2D albedoMap;
-//uniform sampler2D normalMap;
-//uniform sampler2D metallicMap;
-//uniform sampler2D roughnessMap;
-//uniform sampler2D aoMap;
-
 out vec4 FragColor;
   
 uniform vec3 camPos;
 uniform vec3 camView;
 uniform Material material;
-uniform vec3 lightPositions[4];
-uniform vec3 lightColors[4];
 uniform int lightNum;
 uniform int albedoChannels;
-  
 
-//uniform float ao;
-//uniform vec3 F0;
+uniform int renderMode;
+  
 
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
@@ -52,6 +43,27 @@ void main()
     float metallic = texture(material.texture_metallic1, TexCoords).b;
     float roughness = texture(material.texture_roughness1, TexCoords).g;
     float ao = texture(material.texture_metallic1, TexCoords).r;
+
+    if(renderMode > 0){
+        vec3 color;
+        if (renderMode == 1){
+            color = albedo;
+            if(albedoChannels == 4){
+                FragColor = vec4(color, texture(material.texture_diffuse1, TexCoords).a);
+                return;
+            }
+        } else if (renderMode == 2){
+            color = texture(material.texture_metallic1, TexCoords).rgb;
+        } else if (renderMode == 3){
+            color = vec3(metallic, metallic, metallic);
+        } else if (renderMode == 4){
+            color = vec3(roughness, roughness, roughness);
+        } else if (renderMode == 5){
+            color = vec3(ao, ao, ao);
+        }
+        FragColor = vec4(color, 1.0f);
+        return;
+    }
     
 
     vec3 N = getNormalFromMap();//normalize(Normal); 
@@ -67,27 +79,6 @@ void main()
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
 
-    //Spot light sources
-    vec3 Lo = vec3(0.0);
-    for(int i=0; i<lightNum; i++){
-        vec3 L = normalize(lightPositions[i] - WorldPos);
-        vec3 H = normalize(V+L);
-        float distance = length(lightPositions[i] - WorldPos);
-        float attenuation = 1.0/(distance * distance);
-        vec3 radiance = lightColors[i] * attenuation;
-
-        //BRDF(Cook-Torrance)
-        float NDF = DistributionGGX(N, H, roughness);
-        float G = GeometrySmith(N, V, L, roughness);
-
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; //prevent a divide by zero
-        vec3 specular = numerator / denominator;
-
-        float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-    }
-
 
     //IBL
     vec3 irradiance = texture(irradianceMap, N).rgb;
@@ -100,7 +91,7 @@ void main()
   
     vec3 ambient = (kD * diffuse + specular) * ao;
 
-    vec3 color = ambient + Lo;
+    vec3 color = ambient;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
