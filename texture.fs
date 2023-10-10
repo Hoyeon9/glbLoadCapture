@@ -4,25 +4,17 @@ in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
 
-struct Material{
-	sampler2D texture_diffuse1;
-	sampler2D texture_specular1;
-	sampler2D texture_normal1;
-	sampler2D texture_albedo1;
-	sampler2D texture_metallic1;
-	sampler2D texture_roughness1;
-	sampler2D texture_emissive1;
-};
+uniform sampler2D texture1;
+
 out vec4 FragColor;
   
 uniform vec3 camPos;
 uniform vec3 camView;
-uniform Material material;
-uniform int lightNum;
 uniform int albedoChannels;
-
-uniform int renderMode;
   
+
+//uniform float ao;
+//uniform vec3 F0;
 
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
@@ -43,27 +35,6 @@ void main()
     float metallic = texture(material.texture_metallic1, TexCoords).b;
     float roughness = texture(material.texture_roughness1, TexCoords).g;
     float ao = texture(material.texture_metallic1, TexCoords).r;
-
-    if(renderMode > 0){
-        vec3 color;
-        if (renderMode == 1){
-            color = albedo;
-            if(albedoChannels == 4){
-                FragColor = vec4(color, texture(material.texture_diffuse1, TexCoords).a);
-                return;
-            }
-        } else if (renderMode == 2){
-            color = texture(material.texture_metallic1, TexCoords).rgb;
-        } else if (renderMode == 3){
-            color = vec3(metallic, metallic, metallic);
-        } else if (renderMode == 4){
-            color = vec3(roughness, roughness, roughness);
-        } else if (renderMode == 5){
-            color = vec3(ao, ao, ao);
-        }
-        FragColor = vec4(color, 1.0f);
-        return;
-    }
     
 
     vec3 N = getNormalFromMap();//normalize(Normal); 

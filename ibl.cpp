@@ -526,7 +526,7 @@ int main() {
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
 		
 		//light sources
-		glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
+		//glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
 		/*for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lightPositions[i]);
@@ -570,8 +570,30 @@ int main() {
 				captureImage(fileName+to_string((int)th) + "_" + to_string((int)pi)+".png");
 			}
 		}*/
-		fileName = fileName + "\\test_";
-		rotateCapture(loadedModel, renderProgram, fileName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 0);
+		string imgName = fileName + "\\IBL_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 1);
+		imgName = fileName + "\\Albedo_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 2);
+		imgName = fileName + "\\Metallic-Roughness_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 3);
+		imgName = fileName + "\\Metallic_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 4);
+		imgName = fileName + "\\Roughness_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 5);
+		imgName = fileName + "\\AO_";
+		rotateCapture(loadedModel, renderProgram, imgName);
 		
 
 		//---------------------------------------Capture-----------------------------------
