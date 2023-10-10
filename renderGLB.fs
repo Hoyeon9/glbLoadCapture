@@ -79,27 +79,6 @@ void main()
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
 
-    //Spot light sources
-    vec3 Lo = vec3(0.0);
-    for(int i=0; i<lightNum; i++){
-        vec3 L = normalize(lightPositions[i] - WorldPos);
-        vec3 H = normalize(V+L);
-        float distance = length(lightPositions[i] - WorldPos);
-        float attenuation = 1.0/(distance * distance);
-        vec3 radiance = lightColors[i] * attenuation;
-
-        //BRDF(Cook-Torrance)
-        float NDF = DistributionGGX(N, H, roughness);
-        float G = GeometrySmith(N, V, L, roughness);
-
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; //prevent a divide by zero
-        vec3 specular = numerator / denominator;
-
-        float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-    }
-
 
     //IBL
     vec3 irradiance = texture(irradianceMap, N).rgb;
@@ -112,7 +91,7 @@ void main()
   
     vec3 ambient = (kD * diffuse + specular) * ao;
 
-    vec3 color = ambient + Lo;
+    vec3 color = ambient;
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
