@@ -21,9 +21,9 @@ namespace fs = experimental::filesystem;
 using namespace cv;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
+/*void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);*/
 GLuint loadTexture(char const* texPath);
 GLuint loadHDR(char const* texPath);
 vector<string> LoadFileList(string root);
@@ -61,6 +61,7 @@ int main() {
 			sprintf(buff, "mkdir %s%c", savePath.c_str(), i);
 			system(buff);
 		}
+		cout << "Save repositories are created\n";
 	}
 
 
@@ -92,10 +93,14 @@ int main() {
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);
+	/*glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);*/
 
+	cout << "Loading models' paths...\n";
+	auto loadedModelPaths = LoadFileList(modelsPath);
+	cout << "Path loading done\n";
 
+	cout << "Preparing sources..\n";
 	//Loading shaders--------------------------
 	unsigned int equiProgram = loadShader("hdr2cube.vs", "hdr2cube.fs");
 	unsigned int irradianceShader = loadShader("hdr2cube.vs", "irradiance.fs");
@@ -111,8 +116,7 @@ int main() {
 	glUniform1i(glGetUniformLocation(renderProgram, ("irradianceMap")), 0);
 	glUniform1i(glGetUniformLocation(renderProgram, ("prefilterMap")), 1);
 	glUniform1i(glGetUniformLocation(renderProgram, ("brdfLUT")), 2);
-
-	auto loadedModelPaths = LoadFileList(modelsPath);
+	
 	//string modelPath = "models/0/B00XBC3BF0.glb";
 	//Model loadedModel = Model(filePaths[0]);
 	//max_page = loadedModel.getTextureNum();
@@ -454,7 +458,7 @@ int main() {
 	glViewport(0, 0, scrWidth, scrHeight);
 
 	//lights
-	glm::vec3 lightPositions[] = {
+	/*glm::vec3 lightPositions[] = {
 		glm::vec3(-10.0f,  10.0f, 10.0f),
 		glm::vec3(10.0f,  10.0f, 10.0f),
 		glm::vec3(-10.0f, -10.0f, 10.0f),
@@ -465,7 +469,8 @@ int main() {
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f)
-	};
+	};*/
+	cout << "Advanced works are done\n\n";
 
 	std::cout << "Main Loop---------------------------------------\n";
 	for (auto filePath : loadedModelPaths) {
@@ -480,12 +485,12 @@ int main() {
 		
 
 
-		processInput(window);
+		//processInput(window);
 
 		//delta time
-		float currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
+		//float currentFrame = glfwGetTime();
+		//deltaTime = currentFrame - lastFrame;
+		//lastFrame = currentFrame;
 		
 
 		glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
@@ -502,7 +507,7 @@ int main() {
 
 		
 		//Draw skybox----------------------
-		glDepthFunc(GL_LEQUAL);
+		/*glDepthFunc(GL_LEQUAL);
 		glUseProgram(skyboxProgram);
 		glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -513,7 +518,7 @@ int main() {
 		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDepthFunc(GL_LESS);
-		//--------skybox----------------------
+		//--------skybox----------------------*/
 
 		glUseProgram(renderProgram);
 		glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
@@ -523,9 +528,9 @@ int main() {
 		glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
 		
-		//light sources
+		/*//light sources
 		//glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
-		/*for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
+		for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lightPositions[i]);
 			model = glm::scale(model, glm::vec3(0.3f));
@@ -549,25 +554,9 @@ int main() {
 		glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
-		
-		/*for (float th = 0; th <= 180; th += 45) {
-			for (float pi = 0; pi <= 315; pi += 45) {
-				glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				cameraPos = glm::vec3(capRad * cos(glm::radians(th-90)) * cos(glm::radians(pi)), capRad * sin(glm::radians(th-90)), capRad * cos(glm::radians(th-90)) * sin(glm::radians(pi))) + objCtr;
-				cameraFront = objCtr - cameraPos;
-				view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-				glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
-				glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-				glUniform3fv(glGetUniformLocation(renderProgram, "camPos"), 1, glm::value_ptr(cameraPos));
-				glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
-
-				loadedModel.Draw(renderProgram);
-				string fileName = "test_";
-				captureImage(fileName+to_string((int)th) + "_" + to_string((int)pi)+".png");
-			}
-		}*/
+		//Capture--------------------------
+		cout << "Capturing images...\n";
 
 		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 0);
 		string imgName = fileName + "\\IBL_";
@@ -592,10 +581,8 @@ int main() {
 		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 5);
 		imgName = fileName + "\\AO_";
 		rotateCapture(loadedModel, renderProgram, imgName);
-		
-
-		//---------------------------------------Capture-----------------------------------
-		//-------------Capture ends-----------------------------
+	
+		cout << "Capturing done\n\n";
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -610,7 +597,7 @@ int main() {
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
-void processInput(GLFWwindow* window) {
+/*void processInput(GLFWwindow* window) {
 	float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -664,7 +651,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	fov -= (float)yoffset;
 	if (fov < 0.5f) fov = 0.5f;
 	if (fov > 60.0f) fov = 60.0f;
-}
+}*/
 
 vector<string> LoadFileList(string root) {
 	vector<string> res;

@@ -60,23 +60,23 @@ void Model::loadModel(string path) {
 	}
 	cout << "File reading done\n";
 	this->directory = path.substr(0, path.find_last_of('/'));
-	cout << "Processing Node..";
+	cout << "Processing Node..\n";
 	processNode(scene->mRootNode, scene); //process all of the scene's nodes recursively
-	cout << "Processing done\n";
+	cout << "Processing done from " << path << "\n";
 }
 void Model::processNode(aiNode* node, const aiScene* scene) {
-	cout << "processNode: " << node->mName.C_Str() << endl;
+	//cout << "processNode: " << node->mName.C_Str() << endl;
 	for (unsigned int i = 0; i < node->mNumMeshes; i++) { //for all the meshes included in the node
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		this->meshes.push_back(processMesh(mesh, scene));
 	}
-	cout<<"processNode_pushed all the meshes of: "<< node->mName.C_Str() << endl;
+	//cout<<"processNode_pushed all the meshes of: "<< node->mName.C_Str() << endl;
 	//same for its children
-	cout << "Call processNode for children of: " << node->mName.C_Str() << endl;
+	//cout << "Call processNode for children of: " << node->mName.C_Str() << endl;
 	for (unsigned int i = 0; i < node->mNumChildren; i++) {
 		processNode(node->mChildren[i], scene);
 	}
-	cout << "processNode_Done: " << node->mName.C_Str() << "------------" << endl;
+	//cout << "processNode_Done: " << node->mName.C_Str() << "------------" << endl;
 }
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 	vector<Vertex> vertices;
@@ -118,8 +118,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 	}
 
 	if (mesh->mMaterialIndex >= 0) {
-		cout << "Materials Loading..\n";
+		cout << "Loading materials..\n";
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+		/*
 		for (int i = aiTextureType_NONE; i <= aiTextureType_TRANSMISSION; i++) {
 			cout << setw(13) << left << textureNames[i] << ": ";
 			if (material->GetTextureCount((aiTextureType)i) > 0)
@@ -127,12 +128,13 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 			else
 				cout << 0 << " ";
 			cout << endl;
-		}
+		}*/
 		
 		for (int i = 0; i < 22; i++) {
 			vector<Texture> tempMaps = loadMaterialtextures(material, (aiTextureType)i, "texture_"+textureNames[i]);
 			textures.insert(textures.end(), tempMaps.begin(), tempMaps.end());
 		}
+		cout << "Materials loading done\n";
 	}
 	
 	return Mesh(vertices, indices, textures);
@@ -140,7 +142,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 vector<Texture> Model::loadMaterialtextures(aiMaterial* material, aiTextureType type, string typeName) {
 	vector<Texture> textures;
 	for (unsigned int i = 0; i < material->GetTextureCount(type); i++) {
-		cout << typeName << " " << i << endl;
+		//cout << typeName << " " << i << endl;
 		aiString str;
 		material->GetTexture(type, i, &str);
 		
@@ -155,7 +157,7 @@ vector<Texture> Model::loadMaterialtextures(aiMaterial* material, aiTextureType 
 			}
 		}
 		if (!skip) {
-			cout << "load texture from file: " << str.C_Str() <<endl;
+			//cout << "load texture from file: " << str.C_Str() <<endl;
 			aiTexel* data = extractedTex->pcData;
 			
 			Texture texture;
@@ -212,7 +214,7 @@ unsigned int TextureFromMemory(aiTexel* texelData, unsigned int len, int *channe
 
 	int width, height, nrChannels;
 	unsigned char *data = stbi_load_from_memory(stbiImageData, len, &width, &height, &nrChannels, 0);
-	cout << "Texture's x, y, channels: " << (unsigned int)width << " " << (unsigned int)height << " " << (unsigned int)nrChannels << endl;
+	//cout << "Texture's x, y, channels: " << (unsigned int)width << " " << (unsigned int)height << " " << (unsigned int)nrChannels << endl;
 	*channels = nrChannels;
 
 	unsigned int texture;
