@@ -64,7 +64,6 @@ int main() {
 	}
 
 
-
 	//---Creating window(from initialize GLFW~~)---
 	glfwInit(); //initilalizes GLFW
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); //(possible options, valule of our options)
@@ -113,11 +112,11 @@ int main() {
 	glUniform1i(glGetUniformLocation(renderProgram, ("prefilterMap")), 1);
 	glUniform1i(glGetUniformLocation(renderProgram, ("brdfLUT")), 2);
 
-	auto filePaths = LoadFileList(modelsPath);
+	auto loadedModelPaths = LoadFileList(modelsPath);
 	//string modelPath = "models/0/B00XBC3BF0.glb";
-	Model loadedModel = Model(filePaths[0]);
-	max_page = loadedModel.getTextureNum();
-	cout << max_page << " max pages\n";
+	//Model loadedModel = Model(filePaths[0]);
+	//max_page = loadedModel.getTextureNum();
+	//cout << max_page << " max pages\n";
 
 	float cubeVertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
@@ -251,10 +250,10 @@ int main() {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-	//HDR to cubemap----------------------------------------------------
+	
+	//HDR to cubemap(equi)----------------------------------------------------
 	unsigned int equiTexture = loadHDR("hdr/office.hdr");
-
+	
 	glUseProgram(equiProgram);
 	glUniform1i(glGetUniformLocation(equiProgram, ("equirectangularMap")), 0);
 
@@ -297,7 +296,7 @@ int main() {
 	glUniformMatrix4fv(glGetUniformLocation(equiProgram, "projection"), 1, GL_FALSE, glm::value_ptr(captureProjection));
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, equiTexture);
-
+	
 	glViewport(0, 0, 1024, 1024); // don't forget to configure the viewport to the capture dimensions.
 	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
 	for (unsigned int i = 0; i < 6; ++i) {
@@ -469,9 +468,8 @@ int main() {
 	};
 
 	std::cout << "Main Loop---------------------------------------\n";
-	int currentPage = 0;
-	while (!glfwWindowShouldClose(window)) {
-		string filePath = filePaths[0];
+	for (auto filePath : loadedModelPaths) {
+		Model loadedModel = Model(filePath);
 		size_t found = filePath.find_last_of("/\\");
 		string fileName = filePath.substr(found - 1);
 		if (!fs::exists(savePath + fileName)) {
@@ -526,7 +524,7 @@ int main() {
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
 		
 		//light sources
-		glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
+		//glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
 		/*for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lightPositions[i]);
@@ -570,8 +568,30 @@ int main() {
 				captureImage(fileName+to_string((int)th) + "_" + to_string((int)pi)+".png");
 			}
 		}*/
-		fileName = fileName + "\\test_";
-		rotateCapture(loadedModel, renderProgram, fileName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 0);
+		string imgName = fileName + "\\IBL_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 1);
+		imgName = fileName + "\\Albedo_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 2);
+		imgName = fileName + "\\Metallic-Roughness_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 3);
+		imgName = fileName + "\\Metallic_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 4);
+		imgName = fileName + "\\Roughness_";
+		rotateCapture(loadedModel, renderProgram, imgName);
+
+		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 5);
+		imgName = fileName + "\\AO_";
+		rotateCapture(loadedModel, renderProgram, imgName);
 		
 
 		//---------------------------------------Capture-----------------------------------
@@ -580,8 +600,6 @@ int main() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		
-
-		break;
 	}
 	glDeleteProgram(equiProgram);
 	glDeleteBuffers(1, &cubeVAO);
@@ -779,5 +797,6 @@ GLuint loadHDR(char const* texPath) {
 		std::cout << "Failed to load HDR image." << std::endl;
 		return -1;
 	}
+	stbi_set_flip_vertically_on_load(false);
 	return hdrTexture;
 }

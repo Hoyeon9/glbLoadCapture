@@ -5,6 +5,8 @@
 
 hdr/
 models/
+shelter/
+opencv_world480d.dll
 
 # User-specific files
 *.rsuser
