@@ -21,9 +21,6 @@ namespace fs = experimental::filesystem;
 using namespace cv;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-/*void processInput(GLFWwindow* window);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);*/
 GLuint loadTexture(char const* texPath);
 GLuint loadHDR(char const* texPath);
 vector<string> LoadFileList(string root);
@@ -35,15 +32,9 @@ float capRad = 1.8;
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.5f, 1.5f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
-float lastX = 400, lastY = 300;
-float yaw = -90.0, pitch;
-bool firstMouse = true;
+//float deltaTime = 0.0f;
+//float lastFrame = 0.0f;
 float fov = 45.0f;
-
-int page = 0;
-int max_page = 8;
 
 string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
 string savePath = "C:\\Users\\gcoh0\\source\\repos\\LearnOpenGL\\testSave\\";
@@ -93,8 +84,6 @@ int main() {
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	/*glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);*/
 
 	cout << "Loading models' paths...\n";
 	auto loadedModelPaths = LoadFileList(modelsPath);
@@ -116,11 +105,6 @@ int main() {
 	glUniform1i(glGetUniformLocation(renderProgram, ("irradianceMap")), 0);
 	glUniform1i(glGetUniformLocation(renderProgram, ("prefilterMap")), 1);
 	glUniform1i(glGetUniformLocation(renderProgram, ("brdfLUT")), 2);
-	
-	//string modelPath = "models/0/B00XBC3BF0.glb";
-	//Model loadedModel = Model(filePaths[0]);
-	//max_page = loadedModel.getTextureNum();
-	//cout << max_page << " max pages\n";
 
 	float cubeVertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
@@ -475,6 +459,7 @@ int main() {
 	std::cout << "Main Loop---------------------------------------\n";
 	for (auto filePath : loadedModelPaths) {
 		Model loadedModel = Model(filePath);
+		//Create model's picture directory
 		size_t found = filePath.find_last_of("/\\");
 		string fileName = filePath.substr(found - 1);
 		if (!fs::exists(savePath + fileName)) {
@@ -482,11 +467,7 @@ int main() {
 			sprintf(buff, "mkdir %s%s", savePath.c_str(), fileName.c_str());
 			system(buff);
 		}
-		
-
-
-		//processInput(window);
-
+	
 		//delta time
 		//float currentFrame = glfwGetTime();
 		//deltaTime = currentFrame - lastFrame;
@@ -590,6 +571,9 @@ int main() {
 	}
 	glDeleteProgram(equiProgram);
 	glDeleteBuffers(1, &cubeVAO);
+	glDeleteBuffers(1, &skyboxVAO);
+	glDeleteBuffers(1, &quadVAO);
+	glDeleteFramebuffers(1, &captureFBO);
 	glfwTerminate();
 	return 0;
 }
@@ -597,61 +581,6 @@ int main() {
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
-/*void processInput(GLFWwindow* window) {
-	float cameraSpeed = 2.5f * deltaTime;
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraUp;
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraUp;
-
-	for (int i = GLFW_KEY_0; i < GLFW_KEY_0 + max_page; i++) {
-		if (glfwGetKey(window, i) == GLFW_PRESS)
-			page = i - GLFW_KEY_0;
-	}
-}
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-	if (firstMouse) {
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-	lastX = xpos;
-	lastY = ypos;
-
-	const float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-	yaw += xoffset;
-	if (pitch + yoffset <90.0 && pitch + yoffset > -90.0) {
-		pitch += yoffset;
-	}
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
-
-}
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-	fov -= (float)yoffset;
-	if (fov < 0.5f) fov = 0.5f;
-	if (fov > 60.0f) fov = 60.0f;
-}*/
 
 vector<string> LoadFileList(string root) {
 	vector<string> res;
