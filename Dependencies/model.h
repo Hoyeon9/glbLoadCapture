@@ -24,6 +24,7 @@ public:
 	void Draw(unsigned int shaderID);
 	Texture getTexture(int num);
 	unsigned int getTextureNum();
+	vector<glm::vec3> getAllVertices();
 private:
 	const aiScene *scene;
 	vector<Mesh> meshes;
@@ -46,6 +47,15 @@ Texture Model::getTexture(int num) {
 }
 unsigned int Model::getTextureNum() {
 	return this->textures_loaded.size();
+}
+vector<glm::vec3> Model::getAllVertices() {
+	vector<glm::vec3> allVertices;
+	for (int i = 0; i < this->meshes.size(); i++) {
+		for (int j = 0; j < this->meshes[i].vertices.size(); j++) {
+			allVertices.push_back(this->meshes[i].vertices[j].Position);
+		}
+	}
+	return allVertices;
 }
 void Model::loadModel(string path) {
 	cout << "Starting model loading...\n";
@@ -241,8 +251,5 @@ unsigned int TextureFromMemory(aiTexel* texelData, unsigned int len, int *channe
 	stbi_image_free(data);  //free memory
 	return texture;
 }
-//unsigned char* aiTexelLoader(aiTexel* data) {
-
-//}
 
 #endif

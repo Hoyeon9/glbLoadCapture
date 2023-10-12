@@ -24,11 +24,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLuint loadTexture(char const* texPath);
 GLuint loadHDR(char const* texPath);
 vector<string> LoadFileList(string root);
-void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName);
+void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm::mat4 model);
 void captureImage(string fileName);
+double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr);
 
-glm::vec3 objCtr = glm::vec3(0.0f, 0.2f, 0.0f);
-float capRad = 1.8;
+//glm::vec3 objCtr = glm::vec3(0.0f, 0.2f, 0.0f);
+float capRad = 4.0;
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.5f, 1.5f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -476,6 +477,16 @@ int main() {
 			sprintf(buff, "mkdir %s%s", savePath.c_str(), fileName.c_str());
 			system(buff);
 		}
+
+		//Calculate min-max bounding box
+		vector<glm::vec3> allVertices = loadedModel.getAllVertices();
+		glm::vec3 boxCtr;
+		float boxDiagonalLen = boundingBox(allVertices, boxCtr);
+
+		float scalingSize = 1.732 / boxDiagonalLen;
+		glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scalingSize, scalingSize, scalingSize));
+		glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-boxCtr.x, -boxCtr.y, -boxCtr.z));
+		glm::mat4 normalizeMatrix = scalingMatrix * translateMatrix;
 	
 		//delta time
 		//float currentFrame = glfwGetTime();
@@ -489,7 +500,7 @@ int main() {
 		//rendering part
 
 		//mat------------
-		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 model = normalizeMatrix;
 		glm::mat4 view = glm::mat4(1.0f);
 		glm::mat4 projection = glm::mat4(1.0f);
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
@@ -511,9 +522,9 @@ int main() {
 		//--------skybox----------------------*/
 
 		glUseProgram(renderProgram);
-		glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
-		glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(renderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		//glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
+		//glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		//glUniformMatrix4fv(glGetUniformLocation(renderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		glUniform3fv(glGetUniformLocation(renderProgram, "camPos"), 1, glm::value_ptr(cameraPos));
 		glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
@@ -548,10 +559,10 @@ int main() {
 		//Capture--------------------------
 		cout << "Capturing images...\n";
 
-		for (int i = 0; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
+		for (int i = 0; i < 1; i++) {
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
 			string imgName = fileName + "\\" + renderModes[i] + "_";
-			rotateCapture(loadedModel, renderProgram, imgName);
+			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
 	
 		cout << "Capturing done\n\n";
@@ -588,16 +599,15 @@ vector<string> LoadFileList(string root) {
 	}
 	return res;
 }
-void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName) {
+void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm::mat4 model) {
 	for (float th = 0; th <= 180; th += 45) {
 		for (float pi = 0; pi <= 315; pi += 45) {
 			glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glm::mat4 model = glm::mat4(1.0f);
 			glm::mat4 view = glm::mat4(1.0f);
 			glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
-			cameraPos = glm::vec3(capRad * cos(glm::radians(th - 90)) * cos(glm::radians(pi)), capRad * sin(glm::radians(th - 90)), capRad * cos(glm::radians(th - 90)) * sin(glm::radians(pi))) + objCtr;
-			cameraFront = objCtr - cameraPos;
+			cameraPos = glm::vec3(capRad * cos(glm::radians(th - 90)) * cos(glm::radians(pi)), capRad * sin(glm::radians(th - 90)), capRad * cos(glm::radians(th - 90)) * sin(glm::radians(pi)));
+			cameraFront = glm::vec3(0,0,0) - cameraPos;
 			view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 			glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
 			glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -706,4 +716,51 @@ GLuint loadHDR(char const* texPath) {
 	}
 	stbi_set_flip_vertically_on_load(false);
 	return hdrTexture;
+}
+
+double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr)
+{
+	float maxCoordX = std::numeric_limits<float>::min();
+	float maxCoordY = std::numeric_limits<float>::min();
+	float maxCoordZ = std::numeric_limits<float>::min();
+
+	float minCoordX = std::numeric_limits<float>::max();
+	float minCoordY = std::numeric_limits<float>::max();
+	float minCoordZ = std::numeric_limits<float>::max();
+
+	int num = 0;
+
+	// 8 coordinates of bounding box vertices
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		glm::vec3 temp = vertices[i];
+
+		if (maxCoordX < temp.x)
+			maxCoordX = temp.x;
+
+		if (minCoordX > temp.x)
+			minCoordX = temp.x;
+
+		if (maxCoordY < temp.y)
+			maxCoordY = temp.y;
+
+		if (minCoordY > temp.y)
+			minCoordY = temp.y;
+
+		if (maxCoordZ < temp.z)
+			maxCoordZ = temp.z;
+
+		if (minCoordZ > temp.z)
+			minCoordZ = temp.z;
+	}
+
+	// Center of bounding box
+	boxCtr.x = (maxCoordX + minCoordX) * 0.5f;
+	boxCtr.y = (maxCoordY + minCoordY) * 0.5f;
+	boxCtr.z = (maxCoordZ + minCoordZ) * 0.5f;
+
+	// diagonal length
+	float maxDist = sqrt(pow(maxCoordX - boxCtr.x, 2) + pow(maxCoordY - boxCtr.y, 2) + pow(maxCoordZ - boxCtr.z, 2));
+
+	return maxDist;
 }
