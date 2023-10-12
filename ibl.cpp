@@ -36,6 +36,15 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 //float lastFrame = 0.0f;
 float fov = 45.0f;
 
+string renderModes[] = {
+		"IBL",
+		"Albedo",
+		"Metallic-Roughness",
+		"Metallic",
+		"Roughness",
+		"AO"
+};
+
 string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
 string savePath = "C:\\Users\\gcoh0\\source\\repos\\LearnOpenGL\\testSave\\";
 
@@ -539,29 +548,11 @@ int main() {
 		//Capture--------------------------
 		cout << "Capturing images...\n";
 
-		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 0);
-		string imgName = fileName + "\\IBL_";
-		rotateCapture(loadedModel, renderProgram, imgName);
-
-		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 1);
-		imgName = fileName + "\\Albedo_";
-		rotateCapture(loadedModel, renderProgram, imgName);
-
-		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 2);
-		imgName = fileName + "\\Metallic-Roughness_";
-		rotateCapture(loadedModel, renderProgram, imgName);
-
-		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 3);
-		imgName = fileName + "\\Metallic_";
-		rotateCapture(loadedModel, renderProgram, imgName);
-
-		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 4);
-		imgName = fileName + "\\Roughness_";
-		rotateCapture(loadedModel, renderProgram, imgName);
-
-		glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 5);
-		imgName = fileName + "\\AO_";
-		rotateCapture(loadedModel, renderProgram, imgName);
+		for (int i = 0; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
+			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
+			string imgName = fileName + "\\" + renderModes[i] + "_";
+			rotateCapture(loadedModel, renderProgram, imgName);
+		}
 	
 		cout << "Capturing done\n\n";
 
