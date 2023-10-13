@@ -501,10 +501,6 @@ int main() {
 
 		//mat------------
 		glm::mat4 model = normalizeMatrix;
-		glm::mat4 view = glm::mat4(1.0f);
-		glm::mat4 projection = glm::mat4(1.0f);
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
 
 		
 		//Draw skybox----------------------
@@ -522,9 +518,6 @@ int main() {
 		//--------skybox----------------------*/
 
 		glUseProgram(renderProgram);
-		//glUniformMatrix4fv(glGetUniformLocation(renderProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(projection * view * model));
-		//glUniformMatrix4fv(glGetUniformLocation(renderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		//glUniformMatrix4fv(glGetUniformLocation(renderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		glUniform3fv(glGetUniformLocation(renderProgram, "camPos"), 1, glm::value_ptr(cameraPos));
 		glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
@@ -559,7 +552,7 @@ int main() {
 		//Capture--------------------------
 		cout << "Capturing images...\n";
 
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < sizeof(renderModes)/sizeof(renderModes[0]); i++) {
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
 			string imgName = fileName + "\\" + renderModes[i] + "_";
 			rotateCapture(loadedModel, renderProgram, imgName, model);
