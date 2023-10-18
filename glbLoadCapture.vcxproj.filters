@@ -74,5 +74,8 @@
     <None Include="quad.vs">
       <Filter>Sub Shaders</Filter>
     </None>
+    <None Include="quad_cube.fs">
+      <Filter>Sub Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
