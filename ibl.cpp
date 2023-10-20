@@ -1,9 +1,19 @@
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
-
 #include <iostream>
+using namespace std;
+
+string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
+string savePath = "C:\\Users\\gcoh0\\source\\repos\\LearnOpenGL\\testSave\\";
+string hdrPaths[] = {
+	"hdr/office.hdr",
+	"hdr/satara_night.hdr"
+};
+const int CAPTURE_WIDTH = 800;
+const int CAPTURE_HEIGHT = 600;
+const int TEXTURE_RESOLUTION = 1024;
+
 #include <map>
 #include <experimental/filesystem>
-using namespace std;
 namespace fs = experimental::filesystem;
 
 #include <glad/glad.h>
@@ -62,15 +72,8 @@ string renderModes[] = {
 		"AO"
 };
 
-string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
-string savePath = "C:\\Users\\gcoh0\\source\\repos\\LearnOpenGL\\testSave\\";
-
-string hdrPaths[] = {
-	"hdr/office.hdr",
-	"hdr/satara_night.hdr"
-};
-
 int main() {
+	cout << (float)CAPTURE_WIDTH / CAPTURE_HEIGHT;
 	//Create repo
 	if (!fs::exists(savePath + "A")) {
 		for (int i = 48; i <= 57; i++) {
@@ -93,7 +96,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); //use major, minor both 3 version
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //core profile-not forward-compatible
 	glfwWindowHint(GLFW_SAMPLES, 4);
-	GLFWwindow* window = glfwCreateWindow(800, 600, "IBL_test", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(CAPTURE_WIDTH, CAPTURE_HEIGHT, "GLB Load Capture", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window\n";
 		glfwTerminate();
@@ -214,9 +217,7 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 	
-	//HDR to cubemap(environmnet)----------------------------------------------------
-	unsigned int equiTexture = loadHDR("hdr/office.hdr");
-
+	//Framebuffer setting to generate sources
 	glGenFramebuffers(1, &captureFBO);
 	glGenRenderbuffers(1, &captureRBO);
 
@@ -225,6 +226,7 @@ int main() {
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
 
+	//Preprocess
 	vector<GLuint> processedTextures;
 	for (int i = 0; i < sizeof(hdrPaths) / sizeof(hdrPaths[0]); i++) {
 		unsigned int equiTexture = loadHDR(hdrPaths[i].c_str());
@@ -451,7 +453,7 @@ int main() {
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f)
 	};*/
-	cout << "Advanced works are done\n\n";
+	cout << "Preprocesses are done\n\n";
 
 	std::cout << "Main Loop---------------------------------------\n";
 	for (auto filePath : loadedModelPaths) {
@@ -511,8 +513,8 @@ int main() {
 		glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
 		
-		/*//light sources
-		//glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
+		//light sources
+		/*//glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
 		for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lightPositions[i]);
@@ -653,7 +655,7 @@ GLuint envFormEqui(GLuint equiProgram, GLuint equiTexture) {
 	{
 		// note that we store each face with 16 bit floating point values
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
-			1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
+			TEXTURE_RESOLUTION, TEXTURE_RESOLUTION, 0, GL_RGB, GL_FLOAT, nullptr);
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -822,7 +824,7 @@ void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm
 			glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glm::mat4 view = glm::mat4(1.0f);
-			glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
+			glm::mat4 projection = glm::perspective(glm::radians(fov), float(CAPTURE_WIDTH) / CAPTURE_HEIGHT, 0.1f, 100.0f);
 			cameraPos = glm::vec3(capRad * cos(glm::radians(th - 90)) * cos(glm::radians(pi)), capRad * sin(glm::radians(th - 90)), capRad * cos(glm::radians(th - 90)) * sin(glm::radians(pi)));
 			cameraFront = glm::vec3(0,0,0) - cameraPos;
 			view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
