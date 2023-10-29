@@ -73,7 +73,6 @@ string renderModes[] = {
 };
 
 int main() {
-	cout << (float)CAPTURE_WIDTH / CAPTURE_HEIGHT;
 	//Create repo
 	if (!fs::exists(savePath + "A")) {
 		for (int i = 48; i <= 57; i++) {
@@ -234,6 +233,13 @@ int main() {
 		unsigned int irradianceMap = irradFromEnv(irradianceShader, envCubemap);
 		unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
 		unsigned int brdfLUTTexture = brdfFromEnv(brdfShader);
+
+		unsigned int quadCube = loadShader("quad.vs", "quad_cube.fs");
+		captureTextureImage(equiTexture, to_string(i) + "equi.png", quadShader);
+		captureTextureImage(envCubemap, to_string(i) + "env.png", quadCube);
+		captureTextureImage(irradianceMap, to_string(i) + "irrad.png", quadCube);
+		captureTextureImage(prefiltedMap, to_string(i) + "pref.png", quadCube);
+		captureTextureImage(brdfLUTTexture, to_string(i) + "brdf.png", quadShader);
 
 		processedTextures.push_back(irradianceMap);
 		processedTextures.push_back(prefiltedMap);
