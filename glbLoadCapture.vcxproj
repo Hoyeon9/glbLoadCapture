@@ -146,7 +146,6 @@
     <None Include="prefilter.fs" />
     <None Include="quad.fs" />
     <None Include="quad.vs" />
-    <None Include="quad_cube.fs" />
     <None Include="render.vs" />
     <None Include="renderGLB.fs" />
     <None Include="skybox.fs" />

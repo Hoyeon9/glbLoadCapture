@@ -40,8 +40,8 @@ GLuint prefiltFromEnv(GLuint prefilterShader, GLuint envCubemap);
 GLuint brdfFromEnv(GLuint brdfShader);
 void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm::mat4 model);
 void captureImage(string fileName);
-void captureTextureImage(GLuint texture, string fileName, GLuint quadShader); //For debugging
-void captureCubeTextureImage(GLuint texture, string fileName, GLuint quadShader); //For debugging
+void captureTextureImage(GLuint texture, string fileName); //For debugging
+void captureCubeTextureImage(GLuint texture, string fileName); //For debugging
 double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr);
 
 GLuint captureFBO, captureRBO, skyboxVAO, quadVAO;
@@ -86,7 +86,7 @@ int main() {
 			sprintf(buff, "mkdir %s%c", savePath.c_str(), i);
 			system(buff);
 		}
-		cout << "Save repositories are created\n";
+		std::cout << "Save repositories are created\n";
 	}
 
 
@@ -119,11 +119,11 @@ int main() {
 
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	cout << "Loading models' paths...\n";
+	std::cout << "Loading models' paths...\n";
 	auto loadedModelPaths = LoadFileList(modelsPath);
-	cout << "Path loading done\n";
+	std::cout << "Path loading done\n";
 
-	cout << "Preparing sources..\n";
+	std::cout << "Preparing sources..\n";
 	//Loading shaders--------------------------
 	unsigned int equiProgram = loadShader("hdr2cube.vs", "hdr2cube.fs");
 	unsigned int irradianceShader = loadShader("hdr2cube.vs", "irradiance.fs");
@@ -131,7 +131,6 @@ int main() {
 	unsigned int brdfShader = loadShader("preBRDF.vs", "preBRDF.fs");
 	unsigned int skyboxProgram = loadShader("skybox.vs", "skybox.fs");
 	unsigned int quadShader = loadShader("quad.vs", "quad.fs");
-	//unsigned int quadShader2 = loadShader("quad.vs", "quad_cube.fs"); //for debugging
 
 	unsigned int lightShader = loadShader("lightVer.vs", "lightFrag.fs");
 
@@ -235,15 +234,11 @@ int main() {
 		unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
 		unsigned int brdfLUTTexture = brdfFromEnv(brdfShader);
 
-		unsigned int quadCube = loadShader("quad.vs", "quad_cube.fs");
-		captureTextureImage(equiTexture, to_string(i) + "equi.png", quadShader);
-		//captureTextureImage(envCubemap, to_string(i) + "env.png", quadCube);
-		captureCubeTextureImage(envCubemap, to_string(i) + "env", quadCube);
-		//captureTextureImage(irradianceMap, to_string(i) + "irrad.png", quadCube);
-		captureCubeTextureImage(irradianceMap, to_string(i) + "irrad", quadCube);
-		//captureTextureImage(prefiltedMap, to_string(i) + "pref.png", quadCube);
-		captureCubeTextureImage(prefiltedMap, to_string(i) + "pref", quadCube);
-		captureTextureImage(brdfLUTTexture, to_string(i) + "brdf.png", quadShader);
+		captureTextureImage(equiTexture, "hdr" + to_string(i + 1) + "_equi.png");
+		captureCubeTextureImage(envCubemap, "hdr" + to_string(i + 1) + "_env");
+		captureCubeTextureImage(irradianceMap, "hdr" + to_string(i + 1) + "_irrad");
+		captureCubeTextureImage(prefiltedMap, "hdr" + to_string(i + 1) + "_pref");
+		captureTextureImage(brdfLUTTexture, "hdr" + to_string(i + 1) + "_brdf.png");
 
 		processedTextures.push_back(irradianceMap);
 		processedTextures.push_back(prefiltedMap);
@@ -463,7 +458,7 @@ int main() {
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 0.0f)
 	};*/
-	cout << "Preprocesses are done\n\n";
+	std::cout << "Preprocesses are done\n\n";
 
 	std::cout << "Main Loop---------------------------------------\n";
 	for (auto filePath : loadedModelPaths) {
@@ -477,7 +472,7 @@ int main() {
 			system(buff);
 		}
 
-		cout << "Cature for " + fileName.substr(2) + "\n";
+		std::cout << "Cature for " + fileName.substr(2) + "\n";
 
 		//Calculate min-max bounding box
 		vector<glm::vec3> allVertices = loadedModel.getAllVertices();
@@ -544,7 +539,7 @@ int main() {
 		}*/
 
 		for (int i = 0; i < sizeof(processedTextures) / sizeof(processedTextures[0]) / 3; i++) {
-			cout << " Capture with background image " + hdrPaths[i] + "\n";
+			std::cout << " Capture with background image " + hdrPaths[i] + "\n";
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, processedTextures[3 * i]);
 			glActiveTexture(GL_TEXTURE1);
@@ -553,19 +548,19 @@ int main() {
 			glBindTexture(GL_TEXTURE_2D, processedTextures[3 * i + 2]);
 
 			//Capture--------------------------
-			cout << " Capturing images...\n";
+			std::cout << " Capturing images...\n";
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 0);
 			string imgName = fileName + "\\" + "HDR" + to_string(i + 1) + "_" + renderModes[0] + "_";
 			rotateCapture(loadedModel, renderProgram, imgName, model);
-			cout << " Capturing done\n";
+			std::cout << " Capturing done\n";
 		}
-		cout << " Capturing with source textures...\n";
+		std::cout << " Capturing with source textures...\n";
 		for (int i = 1; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
 			string imgName = fileName + "\\" + renderModes[i] + "_";
 			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
-		cout << " Capturing done\n\n";
+		std::cout << " Capturing done\n\n";
 	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -851,13 +846,13 @@ void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm
 void captureImage(string fileName) {
 	int bitsNum;
 	GLubyte* bits; //RGB bits
-	GLint captureImage[4]; //current viewport
+	GLint imageInfo[4]; //current viewport
 
 	//get current viewport
-	glGetIntegerv(GL_VIEWPORT, captureImage); // 이미지 크기 알아내기
+	glGetIntegerv(GL_VIEWPORT, imageInfo); // 이미지 크기 알아내기
 
-	int rows = captureImage[3];
-	int cols = captureImage[2];
+	int rows = imageInfo[3];
+	int cols = imageInfo[2];
 
 	bitsNum = 3 * cols * rows;
 	bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
@@ -891,48 +886,25 @@ void captureImage(string fileName) {
 	imwrite(filePath, outputImage);
 	delete[] bits;
 }
-void captureTextureImage(GLuint texture, string fileName, GLuint quadShader) {
+void captureTextureImage(GLuint texture, string fileName) {
 	glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glUseProgram(quadShader);
-	glUniform1i(glGetUniformLocation(quadShader, ("texture1")), 0);
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glBindVertexArray(quadVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-
-	int bitsNum;
-	GLubyte* bits; //RGB bits
-	GLint captureImage[4]; //current viewport
-
-	//get current viewport
-	glGetIntegerv(GL_VIEWPORT, captureImage); // 이미지 크기 알아내기
-
-	int rows = captureImage[3];
-	int cols = captureImage[2];
-
-	bitsNum = 3 * cols * rows;
-	bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
-
-	//read pixel from frame buffer
-	//glFinish(); //finish all commands of OpenGL
-
-	glPixelStorei(GL_PACK_ALIGNMENT, 1); //or glPixelStorei(GL_PACK_ALIGNMENT,4);
-	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-	glPixelStorei(GL_PACK_SKIP_ROWS, 0);
-	glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-	glReadPixels(0, 0, cols, rows, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
-
-	Mat outputImage(rows, cols, CV_8UC3);
+	int w, h;
+	int miplevel = 0;
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, &w);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, &h);
+	int bitsNum = 3 * h * w;
+	GLubyte* bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
+	Mat outputImage(h, w, CV_8UC3);
 	int currentIdx;
-
 	for (int i = 0; i < outputImage.rows; i++)
 	{
 		for (int j = 0; j < outputImage.cols; j++)
 		{
 			// stores image from top to bottom, left to right
-			currentIdx = (rows - i - 1) * 3 * cols + j * 3; // +0
+			currentIdx = (h - i - 1) * 3 * w + j * 3; // +0
 
 			outputImage.at<Vec3b>(i, j)[0] = (uchar)(bits[currentIdx]);
 			outputImage.at<Vec3b>(i, j)[1] = (uchar)(bits[++currentIdx]); // +1
@@ -943,28 +915,41 @@ void captureTextureImage(GLuint texture, string fileName, GLuint quadShader) {
 
 	imwrite(filePath, outputImage);
 	delete[] bits;
+	
 }
-void captureCubeTextureImage(GLuint texture, string fileName, GLuint quadCubeShader) {
-	glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void captureCubeTextureImage(GLuint texture, string fileName) {
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(quadCubeShader);
-	glUniform1i(glGetUniformLocation(quadCubeShader, ("texture1")), 0);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glBindVertexArray(quadVAO);
+		int w, h;
+		int miplevel = 0;
+		glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, miplevel, GL_TEXTURE_WIDTH, &w);
+		glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, miplevel, GL_TEXTURE_HEIGHT, &h);
+		int bitsNum = 3 * h * w;
+		GLubyte* bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
+		glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
+		Mat outputImage(h, w, CV_8UC3);
+		int currentIdx;
+		for (int i = 0; i < outputImage.rows; i++)
+		{
+			for (int j = 0; j < outputImage.cols; j++)
+			{
+				// stores image from top to bottom, left to right
+				currentIdx = i * 3 * w + j * 3; // +0
 
-	glm::vec3 sampleDir[] = {
-		glm::vec3(-1,0,0), glm::vec3(1,0,0),
-		glm::vec3(0,-1,0), glm::vec3(0,1,0),
-		glm::vec3(0,0,-1), glm::vec3(0,0,1),
-	};
-	for (int i = 0; i < sizeof(sampleDir) / sizeof(sampleDir[0]); i++) {
-		glUniform3fv(glGetUniformLocation(quadCubeShader, "direction"), 1, glm::value_ptr(sampleDir[i]));
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		captureImage(fileName + to_string(i) + ".png");
+				outputImage.at<Vec3b>(i, j)[0] = (uchar)(bits[currentIdx]);
+				outputImage.at<Vec3b>(i, j)[1] = (uchar)(bits[++currentIdx]); // +1
+				outputImage.at<Vec3b>(i, j)[2] = (uchar)(bits[++currentIdx]); // +2
+			}
+		}
+		string filePath = savePath + fileName + to_string(i + 1) + ".png";
+
+		imwrite(filePath, outputImage);
+		delete[] bits;
 	}
-
 }
 
 double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr)
