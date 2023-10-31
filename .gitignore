@@ -6,6 +6,7 @@
 hdr/
 models/
 shelter/
+testSave/
 opencv_world480d.dll
 
 # User-specific files

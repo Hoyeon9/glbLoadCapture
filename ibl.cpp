@@ -3,7 +3,7 @@
 using namespace std;
 
 string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
-string savePath = "C:\\Users\\gcoh0\\source\\repos\\LearnOpenGL\\testSave\\";
+string savePath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
 string hdrPaths[] = {
 	"hdr/office.hdr",
 	"hdr/satara_night.hdr"
@@ -41,6 +41,7 @@ GLuint brdfFromEnv(GLuint brdfShader);
 void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm::mat4 model);
 void captureImage(string fileName);
 void captureTextureImage(GLuint texture, string fileName, GLuint quadShader); //For debugging
+void captureCubeTextureImage(GLuint texture, string fileName, GLuint quadShader); //For debugging
 double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr);
 
 GLuint captureFBO, captureRBO, skyboxVAO, quadVAO;
@@ -236,9 +237,12 @@ int main() {
 
 		unsigned int quadCube = loadShader("quad.vs", "quad_cube.fs");
 		captureTextureImage(equiTexture, to_string(i) + "equi.png", quadShader);
-		captureTextureImage(envCubemap, to_string(i) + "env.png", quadCube);
-		captureTextureImage(irradianceMap, to_string(i) + "irrad.png", quadCube);
-		captureTextureImage(prefiltedMap, to_string(i) + "pref.png", quadCube);
+		//captureTextureImage(envCubemap, to_string(i) + "env.png", quadCube);
+		captureCubeTextureImage(envCubemap, to_string(i) + "env", quadCube);
+		//captureTextureImage(irradianceMap, to_string(i) + "irrad.png", quadCube);
+		captureCubeTextureImage(irradianceMap, to_string(i) + "irrad", quadCube);
+		//captureTextureImage(prefiltedMap, to_string(i) + "pref.png", quadCube);
+		captureCubeTextureImage(prefiltedMap, to_string(i) + "pref", quadCube);
 		captureTextureImage(brdfLUTTexture, to_string(i) + "brdf.png", quadShader);
 
 		processedTextures.push_back(irradianceMap);
@@ -540,7 +544,7 @@ int main() {
 		}*/
 
 		for (int i = 0; i < sizeof(processedTextures) / sizeof(processedTextures[0]) / 3; i++) {
-			cout << " Capture with Texture " + hdrPaths[i] + "\n";
+			cout << " Capture with background image " + hdrPaths[i] + "\n";
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, processedTextures[3 * i]);
 			glActiveTexture(GL_TEXTURE1);
@@ -551,11 +555,11 @@ int main() {
 			//Capture--------------------------
 			cout << " Capturing images...\n";
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), 0);
-			string imgName = fileName + "\\" + "Texture" + to_string(i + 1) + "_" + renderModes[0] + "_";
+			string imgName = fileName + "\\" + "HDR" + to_string(i + 1) + "_" + renderModes[0] + "_";
 			rotateCapture(loadedModel, renderProgram, imgName, model);
 			cout << " Capturing done\n";
 		}
-		cout << " Capturing with source images...\n";
+		cout << " Capturing with source textures...\n";
 		for (int i = 1; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
 			string imgName = fileName + "\\" + renderModes[i] + "_";
@@ -939,6 +943,28 @@ void captureTextureImage(GLuint texture, string fileName, GLuint quadShader) {
 
 	imwrite(filePath, outputImage);
 	delete[] bits;
+}
+void captureCubeTextureImage(GLuint texture, string fileName, GLuint quadCubeShader) {
+	glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(quadCubeShader);
+	glUniform1i(glGetUniformLocation(quadCubeShader, ("texture1")), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindVertexArray(quadVAO);
+
+	glm::vec3 sampleDir[] = {
+		glm::vec3(-1,0,0), glm::vec3(1,0,0),
+		glm::vec3(0,-1,0), glm::vec3(0,1,0),
+		glm::vec3(0,0,-1), glm::vec3(0,0,1),
+	};
+	for (int i = 0; i < sizeof(sampleDir) / sizeof(sampleDir[0]); i++) {
+		glUniform3fv(glGetUniformLocation(quadCubeShader, "direction"), 1, glm::value_ptr(sampleDir[i]));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		captureImage(fileName + to_string(i) + ".png");
+	}
+
 }
 
 double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr)
