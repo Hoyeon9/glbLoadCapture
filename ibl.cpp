@@ -240,6 +240,8 @@ int main() {
 		processedTextures.push_back(irradianceMap);
 		processedTextures.push_back(prefiltedMap);
 		processedTextures.push_back(brdfLUTTexture);
+
+		cout << "Texture " << i + 1 << " done\n";
 	}
 	
 	/*
@@ -538,8 +540,7 @@ int main() {
 			glUniform3fv(glGetUniformLocation(renderProgram, ("lightColors[" + to_string(i) + "]").c_str()), 1, glm::value_ptr(lightColors[i]));
 
 		}*/
-
-		for (int i = 0; i < sizeof(processedTextures) / sizeof(processedTextures[0]) / 3; i++) {
+		for (int i = 0; i < processedTextures.size() / 3; i++) {
 			size_t found = hdrPaths[i].find_last_of("\\");
 			string hdrName = hdrPaths[i].substr(found + 1);
 
@@ -560,9 +561,9 @@ int main() {
 		}
 		std::cout << " Capturing with source textures...\n";
 		for (int i = 1; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
-			//glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
-			//string imgName = fileName + "\\" + renderModes[i] + "_";
-			//rotateCapture(loadedModel, renderProgram, imgName, model);
+			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
+			string imgName = fileName + "\\" + renderModes[i] + "_";
+			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
 		std::cout << " Capturing done\n\n";
 	
@@ -577,7 +578,7 @@ int main() {
 	glDeleteProgram(skyboxProgram);
 	glDeleteProgram(quadShader);
 	glDeleteProgram(renderProgram);
-	for (int i = 0; i < sizeof(hdrPaths) / sizeof(hdrPaths[0]); i++) {
+	for (int i = 0; i < hdrPaths.size(); i++) {
 		glDeleteTextures(1, &processedTextures[i]);
 	}
 	glDeleteBuffers(1, &skyboxVAO);
