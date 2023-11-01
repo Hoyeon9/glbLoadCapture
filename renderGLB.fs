@@ -64,6 +64,9 @@ void main()
         } else if (renderMode == 5){
             color = vec3(ao, ao, ao);
         }
+        else if (renderMode == 6){
+            color = vec3(1.0, 1.0, 1.0);
+        }
         FragColor = vec4(color, 1.0f);
         return;
     }

@@ -4,13 +4,11 @@ using namespace std;
 
 string modelsLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
 string savePath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
-string hdrLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\hdr\\";/* {
-	"hdr/office.hdr",
-	"hdr/satara_night.hdr"
-};*/
+string hdrLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\hdr\\";
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
 const int TEXTURE_RESOLUTION = 1024;
+float clearColor = 0.6f;
 
 #include <map>
 #include <experimental/filesystem>
@@ -70,7 +68,8 @@ string renderModes[] = {
 		"Metallic-Roughness",
 		"Metallic",
 		"Roughness",
-		"AO"
+		"AO",
+		"Mask"
 };
 
 int main() {
@@ -487,10 +486,6 @@ int main() {
 		//float currentFrame = glfwGetTime();
 		//deltaTime = currentFrame - lastFrame;
 		//lastFrame = currentFrame;
-		
-
-		glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//rendering part
 
@@ -563,9 +558,13 @@ int main() {
 		for (int i = 1; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
 			string imgName = fileName + "\\" + renderModes[i] + "_";
+			if (i == 6) {
+				clearColor = 0.0f;
+			}
 			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
 		std::cout << " Capturing done\n\n";
+		clearColor = 0.6f;
 	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -845,7 +844,7 @@ GLuint brdfFromEnv(GLuint brdfShader) {
 void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm::mat4 model) {
 	for (float th = 0; th <= 180; th += 45) {
 		for (float pi = 0; pi <= 315; pi += 45) {
-			glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+			glClearColor(clearColor, clearColor, clearColor, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glm::mat4 view = glm::mat4(1.0f);
 			glm::mat4 projection = glm::perspective(glm::radians(fov), float(CAPTURE_WIDTH) / CAPTURE_HEIGHT, 0.1f, 100.0f);
