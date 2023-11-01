@@ -2,12 +2,12 @@
 #include <iostream>
 using namespace std;
 
-string modelsPath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
+string modelsLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
 string savePath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
-string hdrPaths[] = {
+string hdrLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\hdr\\";/* {
 	"hdr/office.hdr",
 	"hdr/satara_night.hdr"
-};
+};*/
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
 const int TEXTURE_RESOLUTION = 1024;
@@ -119,8 +119,9 @@ int main() {
 
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	std::cout << "Loading models' paths...\n";
-	auto loadedModelPaths = LoadFileList(modelsPath);
+	std::cout << "Loading paths...\n";
+	auto modelPaths = LoadFileList(modelsLoc);
+	vector<string> hdrPaths = LoadFileList(hdrLoc);
 	std::cout << "Path loading done\n";
 
 	std::cout << "Preparing sources..\n";
@@ -132,13 +133,9 @@ int main() {
 	unsigned int skyboxProgram = loadShader("skybox.vs", "skybox.fs");
 	unsigned int quadShader = loadShader("quad.vs", "quad.fs");
 
-	unsigned int lightShader = loadShader("lightVer.vs", "lightFrag.fs");
+	//unsigned int lightShader = loadShader("lightVer.vs", "lightFrag.fs");
 
 	unsigned int renderProgram = loadShader("render.vs", "renderGLB.fs");
-	glUseProgram(renderProgram);
-	glUniform1i(glGetUniformLocation(renderProgram, ("irradianceMap")), 0);
-	glUniform1i(glGetUniformLocation(renderProgram, ("prefilterMap")), 1);
-	glUniform1i(glGetUniformLocation(renderProgram, ("brdfLUT")), 2);
 
 	float skyboxVertices[] = {
 		// positions          
@@ -227,7 +224,7 @@ int main() {
 
 	//Preprocess
 	vector<GLuint> processedTextures;
-	for (int i = 0; i < sizeof(hdrPaths) / sizeof(hdrPaths[0]); i++) {
+	for (int i = 0; i < hdrPaths.size(); i++) {
 		unsigned int equiTexture = loadHDR(hdrPaths[i].c_str());
 		unsigned int envCubemap = envFormEqui(equiProgram, equiTexture);
 		unsigned int irradianceMap = irradFromEnv(irradianceShader, envCubemap);
@@ -461,10 +458,10 @@ int main() {
 	std::cout << "Preprocesses are done\n\n";
 
 	std::cout << "Main Loop---------------------------------------\n";
-	for (auto filePath : loadedModelPaths) {
+	for (auto filePath : modelPaths) {
 		Model loadedModel = Model(filePath);
 		//Create model's picture directory
-		size_t found = filePath.find_last_of("/\\");
+		size_t found = filePath.find_last_of("\\");
 		string fileName = filePath.substr(found - 1);
 		if (!fs::exists(savePath + fileName)) {
 			char buff[256];
@@ -518,6 +515,10 @@ int main() {
 		glUniform3fv(glGetUniformLocation(renderProgram, "camView"), 1, glm::value_ptr(cameraFront));
 		glUniformMatrix3fv(glGetUniformLocation(renderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(glm::mat3(model)))));
 		
+		glUniform1i(glGetUniformLocation(renderProgram, ("irradianceMap")), 0);
+		glUniform1i(glGetUniformLocation(renderProgram, ("prefilterMap")), 1);
+		glUniform1i(glGetUniformLocation(renderProgram, ("brdfLUT")), 2);
+
 		//light sources
 		/*//glUniform1i(glGetUniformLocation(renderProgram, "lightNum"), sizeof(lightPositions) / sizeof(lightPositions[0]));
 		for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); i++) {
@@ -539,7 +540,10 @@ int main() {
 		}*/
 
 		for (int i = 0; i < sizeof(processedTextures) / sizeof(processedTextures[0]) / 3; i++) {
-			std::cout << " Capture with background image " + hdrPaths[i] + "\n";
+			size_t found = hdrPaths[i].find_last_of("\\");
+			string hdrName = hdrPaths[i].substr(found + 1);
+
+			std::cout << " Capture with background image " + hdrName + "\n";
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, processedTextures[3 * i]);
 			glActiveTexture(GL_TEXTURE1);
@@ -556,9 +560,9 @@ int main() {
 		}
 		std::cout << " Capturing with source textures...\n";
 		for (int i = 1; i < sizeof(renderModes) / sizeof(renderModes[0]); i++) {
-			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
-			string imgName = fileName + "\\" + renderModes[i] + "_";
-			rotateCapture(loadedModel, renderProgram, imgName, model);
+			//glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
+			//string imgName = fileName + "\\" + renderModes[i] + "_";
+			//rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
 		std::cout << " Capturing done\n\n";
 	
@@ -567,8 +571,18 @@ int main() {
 		
 	}
 	glDeleteProgram(equiProgram);
+	glDeleteProgram(irradianceShader);
+	glDeleteProgram(prefilterShader);
+	glDeleteProgram(brdfShader);
+	glDeleteProgram(skyboxProgram);
+	glDeleteProgram(quadShader);
+	glDeleteProgram(renderProgram);
+	for (int i = 0; i < sizeof(hdrPaths) / sizeof(hdrPaths[0]); i++) {
+		glDeleteTextures(1, &processedTextures[i]);
+	}
 	glDeleteBuffers(1, &skyboxVAO);
 	glDeleteBuffers(1, &quadVAO);
+	glDeleteRenderbuffers(1, &captureRBO);
 	glDeleteFramebuffers(1, &captureFBO);
 	glfwTerminate();
 	return 0;
@@ -652,6 +666,10 @@ vector<string> LoadFileList(string root) {
 GLuint envFormEqui(GLuint equiProgram, GLuint equiTexture) {
 	glUseProgram(equiProgram);
 	glUniform1i(glGetUniformLocation(equiProgram, ("equirectangularMap")), 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
 
 	unsigned int envCubemap;
 	glGenTextures(1, &envCubemap);

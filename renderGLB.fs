@@ -3,6 +3,7 @@
 in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
+in vec3 Tangent;
 
 struct Material{
 	sampler2D texture_diffuse1;
@@ -29,6 +30,8 @@ uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT;
 
 const float PI = 3.14159265359;
+
+vec3 testVec;
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0);
 vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
@@ -98,7 +101,6 @@ void main()
     // gamma correct
     color = pow(color, vec3(1.0/2.2));
 
-    //color = texture(material.texture_metallic1, TexCoords).rgb;
     vec3 emissive;
 
     if(albedoChannels == 3)
@@ -152,13 +154,13 @@ vec3 getNormalFromMap()
 {
     vec3 tangentNormal = texture(material.texture_normal1, TexCoords).xyz * 2.0 - 1.0;
 
-    vec3 Q1  = dFdx(WorldPos);
-    vec3 Q2  = dFdy(WorldPos);
-    vec2 st1 = dFdx(TexCoords);
-    vec2 st2 = dFdy(TexCoords);
+    //vec3 Q1  = dFdx(WorldPos);
+    //vec3 Q2  = dFdy(WorldPos);
+    //vec2 st1 = dFdx(TexCoords);
+    //vec2 st2 = dFdy(TexCoords);
 
     vec3 N   = normalize(Normal);
-    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 T  = normalize(Tangent);//normalize(Q1*st2.t - Q2*st1.t);
     vec3 B  = -normalize(cross(N, T));
     mat3 TBN = mat3(T, B, N);
 
