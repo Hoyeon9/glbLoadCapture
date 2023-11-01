@@ -7,7 +7,7 @@ hdr/
 models/
 shelter/
 testSave/
-opencv_world480d.dll
+/*.dll
 
 # User-specific files
 *.rsuser
