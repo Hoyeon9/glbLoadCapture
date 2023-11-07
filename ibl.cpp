@@ -8,8 +8,10 @@ string textureLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave";
 string savePath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
-const int TEXTURE_RESOLUTION = 1024;
+const int ENV_RESOLUTION = 1024;
 float clearColor = 0.6f;
+const int irradResolution = 64;
+const int prefResolution = 64;
 
 #include <map>
 #include <experimental/filesystem>
@@ -35,7 +37,6 @@ GLuint loadHDR(char const* texPath);
 vector<string> LoadFileList(string root);
 GLuint envFormEqui(GLuint equiProgram, GLuint equiTexture);
 GLuint irradFromEnv(GLuint irradianceShader, GLuint envCubemap);
-GLuint irradFromPng(int texNum);
 GLuint prefiltFromEnv(GLuint prefilterShader, GLuint envCubemap);
 GLuint brdfFromEnv(GLuint brdfShader);
 void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm::mat4 model);
@@ -43,12 +44,13 @@ void captureImage(string fileName);
 void captureTextureImage(GLuint texture, string fileName); //For debugging
 void captureCubeTextureImage(GLuint texture, string fileName); //For debugging
 double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr);
+GLuint cubeFromPng(int texNum, string type);
 
 GLuint captureFBO, captureRBO, skyboxVAO, quadVAO;
 vector<glm::vec3> bBoxCoords;
 unsigned int lightShader, bBoxVAO;
 
-float capRad = 2.4;
+float capRad = 2.6;
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.5f, 1.5f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -105,7 +107,7 @@ int main() {
 		glfwTerminate();
 		return -1;
 	}
-	glfwSetWindowPos(window, 660, 240);
+	glfwSetWindowPos(window, 200, 100);
 	glfwMakeContextCurrent(window);
 
 
@@ -233,7 +235,8 @@ int main() {
 		unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
 		unsigned int brdfLUTTexture = brdfFromEnv(brdfShader);
 
-		irradianceMap = irradFromPng(i);
+		//irradianceMap = cubeFromPng(i, "irrad");
+		//prefiltedMap = cubeFromPng(i, "pref");
 
 		//captureTextureImage(equiTexture, "hdr" + to_string(i + 1) + "_equi.png");
 		//captureCubeTextureImage(envCubemap, "hdr" + to_string(i + 1) + "_env");
@@ -699,7 +702,7 @@ GLuint envFormEqui(GLuint equiProgram, GLuint equiTexture) {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, TEXTURE_RESOLUTION, TEXTURE_RESOLUTION);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, ENV_RESOLUTION, ENV_RESOLUTION);
 
 	unsigned int envCubemap;
 	glGenTextures(1, &envCubemap);
@@ -708,7 +711,7 @@ GLuint envFormEqui(GLuint equiProgram, GLuint equiTexture) {
 	{
 		// note that we store each face with 16 bit floating point values
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
-			TEXTURE_RESOLUTION, TEXTURE_RESOLUTION, 0, GL_RGB, GL_FLOAT, nullptr);
+			ENV_RESOLUTION, ENV_RESOLUTION, 0, GL_RGB, GL_FLOAT, nullptr);
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -748,7 +751,7 @@ GLuint irradFromEnv(GLuint irradianceShader, GLuint envCubemap) {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
 	for (unsigned int i = 0; i < 6; ++i)
 	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, irradResolution, irradResolution, 0,
 			GL_RGB, GL_FLOAT, nullptr);
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -760,7 +763,7 @@ GLuint irradFromEnv(GLuint irradianceShader, GLuint envCubemap) {
 	//reuse capture framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 32, 32);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, irradResolution, irradResolution);
 
 	glUseProgram(irradianceShader);
 	glUniform1i(glGetUniformLocation(irradianceShader, ("environmentMap")), 0);
@@ -768,7 +771,7 @@ GLuint irradFromEnv(GLuint irradianceShader, GLuint envCubemap) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 
-	glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
+	glViewport(0, 0, irradResolution, irradResolution); // don't forget to configure the viewport to the capture dimensions.
 	glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
 	for (unsigned int i = 0; i < 6; ++i) {		
 		glUniformMatrix4fv(glGetUniformLocation(irradianceShader, "view"), 1, GL_FALSE, glm::value_ptr(captureViews[i]));
@@ -786,30 +789,6 @@ GLuint irradFromEnv(GLuint irradianceShader, GLuint envCubemap) {
 
 	return irradianceMap;
 }
-GLuint irradFromPng(int texNum) {
-	unsigned int irradianceMap;
-	glGenTextures(1, &irradianceMap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		string path = textureLoc + "\\hdr" + to_string(texNum + 1) + "_irrad" + to_string(i+1) + ".png";
-		int width, height, nrChannels;
-		unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		else {
-			std::cout << "Failed to load irradiance texture" << std::endl;
-			return -1;
-		}
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	return irradianceMap;
-}
 GLuint prefiltFromEnv(GLuint prefilterShader, GLuint envCubemap) {
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -818,7 +797,7 @@ GLuint prefiltFromEnv(GLuint prefilterShader, GLuint envCubemap) {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 	for (unsigned int i = 0; i < 6; ++i)
 	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, prefResolution, prefResolution, 0, GL_RGB, GL_FLOAT, nullptr);
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -839,8 +818,8 @@ GLuint prefiltFromEnv(GLuint prefilterShader, GLuint envCubemap) {
 	for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
 	{
 		// reisze framebuffer according to mip-level size.
-		unsigned int mipWidth = 128 * std::pow(0.5, mip);
-		unsigned int mipHeight = 128 * std::pow(0.5, mip);
+		unsigned int mipWidth = prefResolution * std::pow(0.5, mip);
+		unsigned int mipHeight = prefResolution * std::pow(0.5, mip);
 		glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
 		glViewport(0, 0, mipWidth, mipHeight);
@@ -1070,14 +1049,16 @@ double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr)
 			minCoordZ = temp.z;
 	}
 
-	bBoxCoords.push_back(glm::vec3(minCoordX, minCoordY, minCoordZ));
-	bBoxCoords.push_back(glm::vec3(minCoordX, minCoordY, maxCoordZ));
-	bBoxCoords.push_back(glm::vec3(minCoordX, maxCoordY, minCoordZ));
-	bBoxCoords.push_back(glm::vec3(minCoordX, maxCoordY, maxCoordZ));
-	bBoxCoords.push_back(glm::vec3(maxCoordX, minCoordY, minCoordZ));
-	bBoxCoords.push_back(glm::vec3(maxCoordX, minCoordY, maxCoordZ));
-	bBoxCoords.push_back(glm::vec3(maxCoordX, maxCoordY, minCoordZ));
-	bBoxCoords.push_back(glm::vec3(maxCoordX, maxCoordY, maxCoordZ));
+	vector<glm::vec3> tempVec;
+	tempVec.push_back(glm::vec3(minCoordX, minCoordY, minCoordZ));
+	tempVec.push_back(glm::vec3(minCoordX, minCoordY, maxCoordZ));
+	tempVec.push_back(glm::vec3(minCoordX, maxCoordY, minCoordZ));
+	tempVec.push_back(glm::vec3(minCoordX, maxCoordY, maxCoordZ));
+	tempVec.push_back(glm::vec3(maxCoordX, minCoordY, minCoordZ));
+	tempVec.push_back(glm::vec3(maxCoordX, minCoordY, maxCoordZ));
+	tempVec.push_back(glm::vec3(maxCoordX, maxCoordY, minCoordZ));
+	tempVec.push_back(glm::vec3(maxCoordX, maxCoordY, maxCoordZ));
+	bBoxCoords = tempVec;
 
 	// Center of bounding box
 	boxCtr.x = (maxCoordX + minCoordX) * 0.5f;
@@ -1088,4 +1069,28 @@ double boundingBox(vector<glm::vec3> vertices, glm::vec3& boxCtr)
 	float maxDist = sqrt(pow(maxCoordX - boxCtr.x, 2) + pow(maxCoordY - boxCtr.y, 2) + pow(maxCoordZ - boxCtr.z, 2));
 
 	return maxDist;
+}
+GLuint cubeFromPng(int texNum, string type) {
+	unsigned int cubeMap;
+	glGenTextures(1, &cubeMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		string path = textureLoc + "\\hdr" + to_string(texNum + 1) + "_" + type + to_string(i + 1) + ".png";
+		int width, height, nrChannels;
+		unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		else {
+			std::cout << "Failed to load" + type + "texture" << std::endl;
+			return -1;
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	return cubeMap;
 }
