@@ -2,16 +2,16 @@
 #include <iostream>
 using namespace std;
 
-string modelsLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models";
-string hdrLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\hdr";
-string textureLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave";
+string modelsLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models\\";
+string hdrLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\hdr\\";
+string textureLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
 string savePath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
 const int ENV_RESOLUTION = 1024;
-float clearColor = 0.6f;
-const int irradResolution = 64;
-const int prefResolution = 64;
+float clearColor = 0.5f;
+const int irradResolution = 32;
+const int prefResolution = 128;
 
 #include <map>
 #include <experimental/filesystem>
@@ -120,7 +120,7 @@ int main() {
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	//callback function, it will resize window size when the change is detected
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(clearColor, clearColor, clearColor, 1.0f);
 
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -231,18 +231,19 @@ int main() {
 	for (int i = 0; i < hdrPaths.size(); i++) {
 		unsigned int equiTexture = loadHDR(hdrPaths[i].c_str());
 		unsigned int envCubemap = envFormEqui(equiProgram, equiTexture);
-		unsigned int irradianceMap = irradFromEnv(irradianceShader, envCubemap);
-		unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
+		//unsigned int irradianceMap = irradFromEnv(irradianceShader, envCubemap);
+		//unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
 		unsigned int brdfLUTTexture = brdfFromEnv(brdfShader);
 
-		//irradianceMap = cubeFromPng(i, "irrad");
-		//prefiltedMap = cubeFromPng(i, "pref");
+		unsigned int irradianceMap = cubeFromPng(i, "irrad");
+		unsigned int prefiltedMap = cubeFromPng(i, "pref");
 
 		//captureTextureImage(equiTexture, "hdr" + to_string(i + 1) + "_equi.png");
 		//captureCubeTextureImage(envCubemap, "hdr" + to_string(i + 1) + "_env");
 		//captureCubeTextureImage(irradianceMap, "hdr" + to_string(i + 1) + "_irrad");
 		//captureCubeTextureImage(irradianceMap, "hdr" + to_string(i + 1) + "_irrad_load");
 		//captureCubeTextureImage(prefiltedMap, "hdr" + to_string(i + 1) + "_pref");
+		captureCubeTextureImage(prefiltedMap, "hdr" + to_string(i + 1) + "_load_pref");
 		//captureTextureImage(brdfLUTTexture, "hdr" + to_string(i + 1) + "_brdf.png");
 
 		processedTextures.push_back(irradianceMap);
@@ -592,12 +593,12 @@ int main() {
 			glUniform1i(glGetUniformLocation(renderProgram, "renderMode"), i);
 			string imgName = fileName + "\\" + renderModes[i] + "_";
 			if (i == 6) {
-				clearColor = 0.0f;
+				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			}
 			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
 		std::cout << " Capturing done\n\n";
-		clearColor = 0.6f;
+		glClearColor(clearColor, clearColor, clearColor, 1.0f);
 	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -817,7 +818,7 @@ GLuint prefiltFromEnv(GLuint prefilterShader, GLuint envCubemap) {
 	unsigned int maxMipLevels = 5;
 	for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
 	{
-		// reisze framebuffer according to mip-level size.
+		// resize framebuffer according to mip-level size.
 		unsigned int mipWidth = prefResolution * std::pow(0.5, mip);
 		unsigned int mipHeight = prefResolution * std::pow(0.5, mip);
 		glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
@@ -878,7 +879,6 @@ void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm
 	for (float th = 0; th <= 180; th += 45) {
 		for (float pi = 0; pi <= 315; pi += 45) {
 			glUseProgram(renderProgram);
-			glClearColor(clearColor, clearColor, clearColor, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glm::mat4 view = glm::mat4(1.0f);
 			glm::mat4 projection = glm::perspective(glm::radians(fov), float(CAPTURE_WIDTH) / CAPTURE_HEIGHT, 0.1f, 100.0f);
@@ -897,7 +897,7 @@ void rotateCapture(Model loadedModel, GLuint renderProgram, string fileName, glm
 			glUniform3fv(glGetUniformLocation(lightShader, "lightColor"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 0.0)));
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			glBindVertexArray(bBoxVAO);
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			captureImage(fileName + to_string((int)th) + "_" + to_string((int)pi) + ".png");
@@ -946,9 +946,9 @@ void captureImage(string fileName) {
 
 	imwrite(filePath, outputImage);
 	delete[] bits;
+	outputImage.release();
 }
 void captureTextureImage(GLuint texture, string fileName) {
-	glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	int w, h;
@@ -976,40 +976,49 @@ void captureTextureImage(GLuint texture, string fileName) {
 
 	imwrite(filePath, outputImage);
 	delete[] bits;
+	outputImage.release();
 	
 }
 void captureCubeTextureImage(GLuint texture, string fileName) {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		int w, h;
-		int miplevel = 0;
-		glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, miplevel, GL_TEXTURE_WIDTH, &w);
-		glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, miplevel, GL_TEXTURE_HEIGHT, &h);
-		int bitsNum = 3 * h * w;
-		GLubyte* bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
-		glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
-		Mat outputImage(h, w, CV_8UC3);
-		int currentIdx;
-		for (int i = 0; i < outputImage.rows; i++)
+	int mipMaxLevel = 0;
+	if (fileName.substr(fileName.find_last_of("_") + 1) == "pref") {
+		mipMaxLevel = 4;
+	}
+		
+	for (int j = 0; j <= mipMaxLevel; j++) {
+		for (unsigned int i = 0; i < 6; ++i)
 		{
-			for (int j = 0; j < outputImage.cols; j++)
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			int w, h;
+			glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_TEXTURE_WIDTH, &w);
+			glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_TEXTURE_HEIGHT, &h);
+			int bitsNum = 3 * h * w;
+			GLubyte* bits = new GLubyte[bitsNum]; // opengl에서 읽어오는 비트
+			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
+			Mat outputImage(h, w, CV_8UC3);
+			int currentIdx;
+			for (int k = 0; k < outputImage.rows; k++)
 			{
-				// stores image from top to bottom, left to right
-				currentIdx = i * 3 * w + j * 3; // +0
+				for (int l = 0; l < outputImage.cols; l++)
+				{
+					// stores image from top to bottom, left to right
+					currentIdx = (h - k - 1) * 3 * w + l * 3; // +0
 
-				outputImage.at<Vec3b>(i, j)[0] = (uchar)(bits[currentIdx]);
-				outputImage.at<Vec3b>(i, j)[1] = (uchar)(bits[++currentIdx]); // +1
-				outputImage.at<Vec3b>(i, j)[2] = (uchar)(bits[++currentIdx]); // +2
+					outputImage.at<Vec3b>(k, l)[0] = (uchar)(bits[currentIdx]);
+					outputImage.at<Vec3b>(k, l)[1] = (uchar)(bits[++currentIdx]); // +1
+					outputImage.at<Vec3b>(k, l)[2] = (uchar)(bits[++currentIdx]); // +2
+				}
 			}
-		}
-		string filePath = savePath + fileName + to_string(i + 1) + ".png";
+			string filePath = savePath + fileName + to_string(j) + to_string(i + 1) + ".png";
+			if (mipMaxLevel != 4)
+				filePath = savePath + fileName + to_string(i + 1) + ".png";
 
-		imwrite(filePath, outputImage);
-		delete[] bits;
+			imwrite(filePath, outputImage);
+			delete[] bits;
+			outputImage.release();
+		}
 	}
 }
 
@@ -1074,22 +1083,32 @@ GLuint cubeFromPng(int texNum, string type) {
 	unsigned int cubeMap;
 	glGenTextures(1, &cubeMap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		string path = textureLoc + "\\hdr" + to_string(texNum + 1) + "_" + type + to_string(i + 1) + ".png";
-		int width, height, nrChannels;
-		unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		else {
-			std::cout << "Failed to load" + type + "texture" << std::endl;
-			return -1;
+	int miplevel = 0;
+	if (type == "pref")
+		miplevel = 4;
+	for (int j = 0; j <= miplevel; j++) {
+		for (unsigned int i = 0; i < 6; ++i)
+		{
+			string path = textureLoc + "\\hdr" + to_string(texNum + 1) + "_" + type + to_string(j) + to_string(i + 1) + ".png";
+			if(type != "pref")
+				path = textureLoc + "\\hdr" + to_string(texNum + 1) + "_" + type + to_string(i + 1) + ".png";
+			int width, height, nrChannels;
+			unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+			if (data)
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			else {
+				std::cout << "Failed to load" + type + "texture" << std::endl;
+				return -1;
+			}
 		}
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	if(type == "pref")
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	else
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	return cubeMap;
