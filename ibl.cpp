@@ -231,19 +231,19 @@ int main() {
 	for (int i = 0; i < hdrPaths.size(); i++) {
 		unsigned int equiTexture = loadHDR(hdrPaths[i].c_str());
 		unsigned int envCubemap = envFormEqui(equiProgram, equiTexture);
-		//unsigned int irradianceMap = irradFromEnv(irradianceShader, envCubemap);
-		//unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
+		unsigned int irradianceMap = irradFromEnv(irradianceShader, envCubemap);
+		unsigned int prefiltedMap = prefiltFromEnv(prefilterShader, envCubemap);
 		unsigned int brdfLUTTexture = brdfFromEnv(brdfShader);
 
-		unsigned int irradianceMap = cubeFromPng(i, "irrad");
-		unsigned int prefiltedMap = cubeFromPng(i, "pref");
+		//unsigned int irradianceMap = cubeFromPng(i, "irrad");
+		//unsigned int prefiltedMap = cubeFromPng(i, "pref");
 
 		//captureTextureImage(equiTexture, "hdr" + to_string(i + 1) + "_equi.png");
 		//captureCubeTextureImage(envCubemap, "hdr" + to_string(i + 1) + "_env");
 		//captureCubeTextureImage(irradianceMap, "hdr" + to_string(i + 1) + "_irrad");
 		//captureCubeTextureImage(irradianceMap, "hdr" + to_string(i + 1) + "_irrad_load");
 		//captureCubeTextureImage(prefiltedMap, "hdr" + to_string(i + 1) + "_pref");
-		captureCubeTextureImage(prefiltedMap, "hdr" + to_string(i + 1) + "_load_pref");
+		//captureCubeTextureImage(prefiltedMap, "hdr" + to_string(i + 1) + "_load_pref");
 		//captureTextureImage(brdfLUTTexture, "hdr" + to_string(i + 1) + "_brdf.png");
 
 		processedTextures.push_back(irradianceMap);
@@ -1084,8 +1084,11 @@ GLuint cubeFromPng(int texNum, string type) {
 	glGenTextures(1, &cubeMap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 	int miplevel = 0;
-	if (type == "pref")
+	if (type == "pref") {
 		miplevel = 4;
+		//glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+	}
+		
 	for (int j = 0; j <= miplevel; j++) {
 		for (unsigned int i = 0; i < 6; ++i)
 		{
@@ -1100,6 +1103,9 @@ GLuint cubeFromPng(int texNum, string type) {
 				std::cout << "Failed to load" + type + "texture" << std::endl;
 				return -1;
 			}
+			if (type == "pref" && i == 0) {
+				//glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+			}
 		}
 	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1110,6 +1116,10 @@ GLuint cubeFromPng(int texNum, string type) {
 	else
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	if (type == "pref") {
+		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+	}
 
 	return cubeMap;
 }
