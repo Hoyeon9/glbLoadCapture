@@ -473,14 +473,15 @@ int main() {
 		Model loadedModel = Model(filePath);
 		//Create model's picture directory
 		size_t found = filePath.find_last_of("\\");
-		string fileName = filePath.substr(found - 1);
+		string fileName = filePath.substr(found - 2);
+		cout << savePath + fileName << endl;
 		if (!fs::exists(savePath + fileName)) {
 			char buff[256];
 			sprintf(buff, "mkdir %s%s", savePath.c_str(), fileName.c_str());
 			system(buff);
 		}
 
-		std::cout << "Cature for " + fileName.substr(2) + "\n";
+		std::cout << "Cature for " + fileName.substr(3) + "\n";
 
 		//Calculate min-max bounding box
 		vector<glm::vec3> allVertices = loadedModel.getAllVertices();
