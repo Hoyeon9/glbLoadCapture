@@ -36,6 +36,7 @@ public:
 
 	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
 	void Draw(unsigned int shaderID);
+	void deleteMesh();
 private:
 	unsigned int VAO, VBO, EBO;
 	void setupMesh();
@@ -96,5 +97,10 @@ void Mesh::Draw(unsigned int shaderID) {
 	glBindVertexArray(this->VAO);
 	glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+}
+void Mesh::deleteMesh() {	
+	glDeleteBuffers(1, &this->VBO);
+	glDeleteBuffers(1, &this->EBO);
+	glDeleteVertexArrays(1, &this->VAO);
 }
 #endif

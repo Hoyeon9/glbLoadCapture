@@ -2,10 +2,10 @@
 #include <iostream>
 using namespace std;
 
-string modelsLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\models\\";
-string hdrLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\hdr\\";
+string modelsLoc = "D:\\Amazon_models\\abo-3dmodels\\3dmodels\\original";
+string hdrLoc = "C:\\src\\glbLoadCapture\\hdr\\";
 string textureLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
-string savePath = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
+string savePath = "C:\\src\\capture_231113\\";
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
 const int ENV_RESOLUTION = 1024;
@@ -473,14 +473,15 @@ int main() {
 		Model loadedModel = Model(filePath);
 		//Create model's picture directory
 		size_t found = filePath.find_last_of("\\");
-		string fileName = filePath.substr(found - 1);
+		string fileName = filePath.substr(found - 2);
+		cout << savePath + fileName << endl;
 		if (!fs::exists(savePath + fileName)) {
 			char buff[256];
 			sprintf(buff, "mkdir %s%s", savePath.c_str(), fileName.c_str());
 			system(buff);
 		}
 
-		std::cout << "Cature for " + fileName.substr(2) + "\n";
+		std::cout << "Cature for " + fileName.substr(3) + "\n";
 
 		//Calculate min-max bounding box
 		vector<glm::vec3> allVertices = loadedModel.getAllVertices();
@@ -599,6 +600,12 @@ int main() {
 		}
 		std::cout << " Capturing done\n\n";
 		glClearColor(clearColor, clearColor, clearColor, 1.0f);
+
+		glDeleteBuffers(1, &bBoxEBO);
+		glDeleteBuffers(1, &bBoxVBO);
+		glDeleteVertexArrays(1, &bBoxVAO);
+
+		loadedModel.deleteModel();
 	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -614,8 +621,8 @@ int main() {
 	for (int i = 0; i < hdrPaths.size(); i++) {
 		glDeleteTextures(1, &processedTextures[i]);
 	}
-	glDeleteBuffers(1, &skyboxVAO);
-	glDeleteBuffers(1, &quadVAO);
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteRenderbuffers(1, &captureRBO);
 	glDeleteFramebuffers(1, &captureFBO);
 	glfwTerminate();

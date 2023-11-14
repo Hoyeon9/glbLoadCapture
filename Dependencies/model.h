@@ -25,6 +25,7 @@ public:
 	Texture getTexture(int num);
 	unsigned int getTextureNum();
 	vector<glm::vec3> getAllVertices();
+	void deleteModel();
 private:
 	const aiScene *scene;
 	vector<Mesh> meshes;
@@ -182,6 +183,14 @@ vector<Texture> Model::loadMaterialtextures(aiMaterial* material, aiTextureType 
 		}
 	}
 	return textures;
+}
+void Model::deleteModel() {
+	for (int i = 0; i < this->textures_loaded.size(); i++) {
+		glDeleteTextures(1, &this->textures_loaded[i].id);
+	}
+	for (int i = 0; i < this->meshes.size(); i++) {
+		this->meshes[i].deleteMesh();
+	}
 }
 unsigned int TextureFromFile(const char* path, const string& directory) {
 	string filename = string(path);
