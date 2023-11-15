@@ -75,7 +75,8 @@ string renderModes[] = {
 		"Metallic",
 		"Roughness",
 		"AO",
-		"Mask"
+		"Mask",
+		"Normal"
 };
 
 int main() {

@@ -47,6 +47,8 @@ void main()
     float roughness = texture(material.texture_roughness1, TexCoords).g;
     float ao = texture(material.texture_metallic1, TexCoords).r;
 
+    vec3 N = getNormalFromMap();//normalize(Normal); 
+
     if(renderMode > 0){
         vec3 color;
         if (renderMode == 1){
@@ -63,16 +65,17 @@ void main()
             color = vec3(roughness, roughness, roughness);
         } else if (renderMode == 5){
             color = vec3(ao, ao, ao);
-        }
-        else if (renderMode == 6){
+        } else if (renderMode == 6){
             color = vec3(1.0, 1.0, 1.0);
+        } else if (renderMode == 7){
+            color = N;
         }
         FragColor = vec4(color, 1.0f);
         return;
     }
     
 
-    vec3 N = getNormalFromMap();//normalize(Normal); 
+    
     vec3 V = normalize(camPos + normalize(camView) * 0.3 - WorldPos);
     vec3 R = reflect(-V, N);
 
