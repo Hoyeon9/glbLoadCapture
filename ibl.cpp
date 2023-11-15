@@ -470,10 +470,9 @@ int main() {
 
 	std::cout << "Main Loop---------------------------------------\n";
 	for (auto filePath : modelPaths) {
-		Model loadedModel = Model(filePath);
 		//Create model's picture directory
 		size_t found = filePath.find_last_of("\\");
-		string fileName = filePath.substr(found - 2);
+		string fileName = filePath.substr(found - 1);
 		cout << savePath + fileName << endl;
 		if (!fs::exists(savePath + fileName)) {
 			char buff[256];
