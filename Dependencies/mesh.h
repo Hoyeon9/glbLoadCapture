@@ -102,5 +102,8 @@ void Mesh::deleteMesh() {
 	glDeleteBuffers(1, &this->VBO);
 	glDeleteBuffers(1, &this->EBO);
 	glDeleteVertexArrays(1, &this->VAO);
+	for (int i = 0; i < this->textures.size(); i++) {
+		glDeleteTextures(1, &this->textures[i].id);
+	}
 }
 #endif

@@ -258,6 +258,7 @@ unsigned int TextureFromMemory(aiTexel* texelData, unsigned int len, int *channe
 		std::cout << "Failed to load texture::" << "Image loading error: "<< errorMessage <<  std::endl;
 	}
 	stbi_image_free(data);  //free memory
+	delete[] stbiImageData;
 	return texture;
 }
 

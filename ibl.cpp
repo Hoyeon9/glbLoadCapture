@@ -480,8 +480,12 @@ int main() {
 			sprintf(buff, "mkdir %s%s", savePath.c_str(), fileName.c_str());
 			system(buff);
 		}
+		else {
+			continue;
+		}
+		Model loadedModel = Model(filePath);
 
-		std::cout << "Cature for " + fileName.substr(3) + "\n";
+		std::cout << "Cature for " + fileName.substr(2) + "\n";
 
 		//Calculate min-max bounding box
 		vector<glm::vec3> allVertices = loadedModel.getAllVertices();
