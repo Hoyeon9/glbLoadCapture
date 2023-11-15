@@ -5,7 +5,7 @@ using namespace std;
 string modelsLoc = "D:\\Amazon_models\\abo-3dmodels\\3dmodels\\original";
 string hdrLoc = "C:\\src\\glbLoadCapture\\hdr\\";
 string textureLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
-string savePath = "C:\\src\\capture_231113\\";
+string savePath = "D:\\src\\capture_231113\\";
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
 const int ENV_RESOLUTION = 1024;

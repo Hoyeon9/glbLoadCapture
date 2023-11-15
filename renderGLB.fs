@@ -68,7 +68,7 @@ void main()
         } else if (renderMode == 6){
             color = vec3(1.0, 1.0, 1.0);
         } else if (renderMode == 7){
-            color = N;
+            color = texture(material.texture_normal1, TexCoords).rgb;
         }
         FragColor = vec4(color, 1.0f);
         return;
