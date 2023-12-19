@@ -7,12 +7,12 @@ in vec3 Tangent;
 
 struct Material{
 	sampler2D texture_diffuse1;
-	sampler2D texture_specular1;
+	//sampler2D texture_specular1;
 	sampler2D texture_normal1;
 	sampler2D texture_albedo1;
 	sampler2D texture_metallic1;
 	sampler2D texture_roughness1;
-	sampler2D texture_emissive1;
+	//sampler2D texture_emissive1;
 };
 out vec4 FragColor;
   
@@ -68,7 +68,7 @@ void main()
         } else if (renderMode == 6){
             color = vec3(1.0, 1.0, 1.0);
         } else if (renderMode == 7){
-            color = N;
+            color = (N + 1) / 2;
         }
         FragColor = vec4(color, 1.0f);
         return;

@@ -2,10 +2,10 @@
 #include <iostream>
 using namespace std;
 
-string modelsLoc = "D:\\Amazon_models\\abo-3dmodels\\3dmodels\\original";
-string hdrLoc = "C:\\src\\glbLoadCapture\\hdr\\";
-string textureLoc = "C:\\Users\\gcoh0\\source\\repos\\glbLoadCapture\\testSave\\";
-string savePath = "C:\\src\\capture_231113\\";
+string modelsLoc = "C:\\models\\root\\directory\\";
+string hdrLoc = "C:\\hdrs\\root\\directory\\";
+string textureLoc = "C:\\textures\\root\\directory\\";
+string savePath = "C:\\root\\path\\to\\save\\";
 const int CAPTURE_WIDTH = 800;
 const int CAPTURE_HEIGHT = 600;
 const int ENV_RESOLUTION = 1024;
@@ -481,7 +481,7 @@ int main() {
 			system(buff);
 		}
 		else {
-			continue;
+			//continue;
 		}
 		Model loadedModel = Model(filePath);
 
@@ -599,6 +599,9 @@ int main() {
 			string imgName = fileName + "\\" + renderModes[i] + "_";
 			if (i == 6) {
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+				rotateCapture(loadedModel, renderProgram, imgName, model);
+				glClearColor(clearColor, clearColor, clearColor, 1.0f);
+				continue;
 			}
 			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}

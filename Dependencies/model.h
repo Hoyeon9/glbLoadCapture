@@ -131,7 +131,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 	if (mesh->mMaterialIndex >= 0) {
 		cout << "Loading materials..\n";
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		/*
+		/*//Count materials
 		for (int i = aiTextureType_NONE; i <= aiTextureType_TRANSMISSION; i++) {
 			cout << setw(13) << left << textureNames[i] << ": ";
 			if (material->GetTextureCount((aiTextureType)i) > 0)
