@@ -606,7 +606,6 @@ int main() {
 			rotateCapture(loadedModel, renderProgram, imgName, model);
 		}
 		std::cout << " Capturing done\n\n";
-		glClearColor(clearColor, clearColor, clearColor, 1.0f);
 
 		glDeleteBuffers(1, &bBoxEBO);
 		glDeleteBuffers(1, &bBoxVBO);
@@ -924,13 +923,13 @@ void captureImage(string fileName) {
 	GLint imageInfo[4]; //current viewport
 
 	//get current viewport
-	glGetIntegerv(GL_VIEWPORT, imageInfo); // ÀÌ¹ÌÁö Å©±â ¾Ë¾Æ³»±â
+	glGetIntegerv(GL_VIEWPORT, imageInfo); // ì´ë¯¸ì§€ í¬ê¸° ì•Œì•„ë‚´ê¸°
 
 	int rows = imageInfo[3];
 	int cols = imageInfo[2];
 
 	bitsNum = 3 * cols * rows;
-	bits = new GLubyte[bitsNum]; // opengl¿¡¼­ ÀÐ¾î¿À´Â ºñÆ®
+	bits = new GLubyte[bitsNum]; // openglì—ì„œ ì½ì–´ì˜¤ëŠ” ë¹„íŠ¸
 
 	//read pixel from frame buffer
 	//glFinish(); //finish all commands of OpenGL
@@ -970,7 +969,7 @@ void captureTextureImage(GLuint texture, string fileName) {
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, &w);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, &h);
 	int bitsNum = 3 * h * w;
-	GLubyte* bits = new GLubyte[bitsNum]; // opengl¿¡¼­ ÀÐ¾î¿À´Â ºñÆ®
+	GLubyte* bits = new GLubyte[bitsNum]; // openglì—ì„œ ì½ì–´ì˜¤ëŠ” ë¹„íŠ¸
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
 	Mat outputImage(h, w, CV_8UC3);
 	int currentIdx;
@@ -1009,7 +1008,7 @@ void captureCubeTextureImage(GLuint texture, string fileName) {
 			glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_TEXTURE_WIDTH, &w);
 			glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_TEXTURE_HEIGHT, &h);
 			int bitsNum = 3 * h * w;
-			GLubyte* bits = new GLubyte[bitsNum]; // opengl¿¡¼­ ÀÐ¾î¿À´Â ºñÆ®
+			GLubyte* bits = new GLubyte[bitsNum]; // openglì—ì„œ ì½ì–´ì˜¤ëŠ” ë¹„íŠ¸
 			glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, GL_BGR_EXT, GL_UNSIGNED_BYTE, bits);
 			Mat outputImage(h, w, CV_8UC3);
 			int currentIdx;
