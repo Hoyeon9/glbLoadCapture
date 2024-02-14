@@ -2,12 +2,12 @@
 #include <iostream>
 using namespace std;
 
-string modelsLoc = "C:\\models\\root\\directory\\";
-string hdrLoc = "C:\\hdrs\\root\\directory\\";
+string modelsLoc = "C:\\amazon_model\\abo-3dmodels\\3dmodels\\";
+string hdrLoc = "C:\\Users\\usr\\source\\repos\\glbLoadCapture\\hdr\\";
 string textureLoc = "C:\\textures\\root\\directory\\";
-string savePath = "C:\\root\\path\\to\\save\\";
-const int CAPTURE_WIDTH = 800;
-const int CAPTURE_HEIGHT = 600;
+string savePath = "C:\\Users\\usr\\source\\temp\\";
+const int CAPTURE_WIDTH = 512;
+const int CAPTURE_HEIGHT = 512;
 const int ENV_RESOLUTION = 1024;
 float clearColor = 0.5f;
 const int irradResolution = 32;
@@ -76,12 +76,13 @@ string renderModes[] = {
 		"Roughness",
 		"AO",
 		"Mask",
-		"Normal"
+		"Normal",
+		"NormalMap"
 };
 
 int main() {
 	//Create repo
-	if (!fs::exists(savePath + "A")) {
+	/*if (!fs::exists(savePath + "A")) {
 		for (int i = 48; i <= 57; i++) {
 			char buff[256];
 			sprintf(buff, "mkdir %s%c", savePath.c_str(), i);
@@ -93,7 +94,7 @@ int main() {
 			system(buff);
 		}
 		std::cout << "Save repositories are created\n";
-	}
+	}*/
 
 
 	//---Creating window(from initialize GLFW~~)---
@@ -473,7 +474,7 @@ int main() {
 	for (auto filePath : modelPaths) {
 		//Create model's picture directory
 		size_t found = filePath.find_last_of("\\");
-		string fileName = filePath.substr(found - 1);
+		string fileName = filePath.substr(found + 1);
 		cout << savePath + fileName << endl;
 		if (!fs::exists(savePath + fileName)) {
 			char buff[256];
@@ -485,7 +486,7 @@ int main() {
 		}
 		Model loadedModel = Model(filePath);
 
-		std::cout << "Cature for " + fileName.substr(2) + "\n";
+		std::cout << "Cature for " + fileName + "\n";
 
 		//Calculate min-max bounding box
 		vector<glm::vec3> allVertices = loadedModel.getAllVertices();

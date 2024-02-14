@@ -48,7 +48,7 @@ void main()
     float ao = texture(material.texture_metallic1, TexCoords).r;
 
     vec3 N = getNormalFromMap();//normalize(Normal); 
-
+    
     if(renderMode > 0){
         vec3 color;
         if (renderMode == 1){
@@ -69,6 +69,8 @@ void main()
             color = vec3(1.0, 1.0, 1.0);
         } else if (renderMode == 7){
             color = (N + 1) / 2;
+        } else if (renderMode == 8){
+            color = texture(material.texture_normal1, TexCoords).rgb;
         }
         FragColor = vec4(color, 1.0f);
         return;
