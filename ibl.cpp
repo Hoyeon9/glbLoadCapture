@@ -2,10 +2,10 @@
 #include <iostream>
 using namespace std;
 
-string modelsLoc = "C:\\amazon_model\\abo-3dmodels\\3dmodels\\";
-string hdrLoc = "C:\\Users\\usr\\source\\repos\\glbLoadCapture\\hdr\\";
+string modelsLoc = "C:\\models\\location\\root\\";
+string hdrLoc = "C:\\your\\repository\\location\\path\\glbLoadCapture\\hdr\\";
 string textureLoc = "C:\\textures\\root\\directory\\";
-string savePath = "C:\\Users\\usr\\source\\temp\\";
+string savePath = "C:\\your\\path\\to\\save\\";
 const int CAPTURE_WIDTH = 512;
 const int CAPTURE_HEIGHT = 512;
 const int ENV_RESOLUTION = 1024;
