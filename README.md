@@ -11,7 +11,7 @@ ISO C++ 14 standard
 - [`stb_image.h`](https://github.com/nothings/stb): Load image files and proccess
 ## Execution
 - Check all libraries are set properly
-- Check string variables below for path
+- Check string variables below for the paths
   - modelsLoc
   - hdrLoc
   - savePath
