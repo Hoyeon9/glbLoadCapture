@@ -9,11 +9,16 @@ ISO C++ 14 standard
 - [Assimp](https://assimp.org/): Load 3d models
 - [OpenCV](https://opencv.org/releases/): Image processing
 - [`stb_image.h`](https://github.com/nothings/stb): Load image files and proccess
-## Execution
-- Check all libraries are set properly
-- Check string variables below for the paths
+## Before Execution
+- Check if all the links for the external libraries are set properly.
+  - You might need .dll files for 'OpenCV' and 'Assimp'.
+  - Rebuild in your environment if needed.
+- Check string variables below for your paths.
   - modelsLoc
   - hdrLoc
   - savePath
   - ~~textureLoc~~
-- Result images will be saved in the directories of 'savePath'
+- Result images will be saved in the directories of your 'savePath'.
+## Notes
+Almost of the codes for the rendering refer to 'Learn OpenGL'.
+- [IBL rendering - Learn OpenGL](https://learnopengl.com/PBR/IBL/Diffuse-irradiance)
